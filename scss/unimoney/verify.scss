@@ -1,0 +1,119 @@
+.unimoney-verify-account {
+
+  .table-border-bottom {
+    border-bottom: 1px solid #c8c9ca;
+    margin: 0 16px;
+  }
+
+  .table-border-top {
+    border-top: 1px solid #c8c9ca;
+  }
+
+  .table-border-left {
+    border-left: 1px solid #c8c9ca;
+  }
+
+  .table-border-right {
+    border-right: 1px solid #c8c9ca;
+    text-align: center;
+    height: 35px;
+    line-height: 35px;
+  }
+
+  .table-title {
+    height: 38px;
+    line-height: 38px;
+    font-size: 15px;
+  }
+
+  .table-item {
+    font-size: 15px;
+  }
+
+  a.weui-navbar__item.weui-bar__item--on {
+    border-bottom: solid 2px black;
+  }
+
+  .weui-navbar__item {
+    padding: 6px 0;
+  }
+
+  .weui-navbar + .weui-tab__bd {
+    padding-top: 38px;
+    background-color: #FAFAFA;
+  }
+
+  .weui-tab__bd-item.weui-pull-to-refresh {
+    position: relative;
+  }
+
+  .weui-navbar {
+    background-color: #fff;
+  }
+
+  .weui-btn {
+    line-height: 1.55;
+    font-size: 12px;
+  }
+
+  .bottom-button {
+    line-height: 3;
+    font-size: 17px;
+  }
+
+  .export-list {
+    position: fixed;
+    bottom: 0px;
+    width: 94%;
+    margin: 10px 3%;
+    background-color: #fff;
+  }
+
+  .total-desc {
+    font-size: 16px;
+    margin-left:1em;
+    color:grey;
+
+    span {
+      color: black;
+      font-weight: bold;
+      font-size: 17px;
+    }
+  }
+
+  .remark {
+    margin: 5px 4%;
+    color: grey;
+    font-size: 13px;
+  }
+
+  .table-border-bottom .mark {
+    color: red;
+  }
+}
+
+.weui-dialog__hd {
+  text-align: left;
+}
+
+.weui-dialog .weui-dialog__bd {
+  color: #999;
+  text-align: left;
+}
+
+.weui-dialog .weui-dialog__btn.default {
+  color: #000;
+}
+
+.weui-btn:after {
+  width: 199%;
+  border: 1px solid black;
+}
+
+.weui-dialog {
+  max-width: 325px;
+}
+
+.table-border-top, .table-item {
+  background-color: #fff;
+}
