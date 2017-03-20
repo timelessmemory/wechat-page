@@ -398,6 +398,7 @@ byDealerVm = new Vue(
     disableAccountButton : false
     disableTaxButton : false
     whichList : 'accountList'
+    isShowPicker : true
   methods :
     initData : ()->
       this.isShowRadio = false
@@ -408,9 +409,9 @@ byDealerVm = new Vue(
       quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
       $('#quarter-picker-by-dealer').val(year + '年' + ' ' + '第' + quarter + '季度')
       $('#month-picker-by-dealer').val('請選擇')
-      this.isShowloading = true
 
       this.loadDealer(year, quarter, (year, quarter, _self)->
+        _self.isShowloading = true
         url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val()
         _self.$http.get(url).then(
           (response)->
@@ -437,7 +438,7 @@ byDealerVm = new Vue(
       #   year = tmpYear.substring(0, tmpYear.indexOf "年" )
       #   if tmpQuarter isnt "全部"
       #     quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
-
+      this.isShowPicker = true
       dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
       this.$http.get(dealerUrl).then(
         (response)->
@@ -445,22 +446,25 @@ byDealerVm = new Vue(
           for key of response.data
             values = response.data[key]
           dealers = []
-          values.map((item)->
-            dealers.push(item.name)
-          )
-          $('#productor-picker').val(dealers[0])
-          $("#productor-picker").productorPicker(
-            title : ""
-            changeEvent : this.prodctorChange
-            options : dealers
-          )
-          $('#productor-picker-tax').val(dealers[0])
-          $("#productor-picker-tax").productorPicker(
-            title : ""
-            changeEvent : this.prodctorChangeTax
-            options : dealers
-          )
-          callback(year, quarter, this)
+          if values.length > 0
+            values.map((item)->
+              dealers.push(item.name)
+            )
+            $('#productor-picker').val(dealers[0])
+            $("#productor-picker").productorPicker(
+              title : ""
+              changeEvent : this.prodctorChange
+              options : dealers
+            )
+            $('#productor-picker-tax').val(dealers[0])
+            $("#productor-picker-tax").productorPicker(
+              title : ""
+              changeEvent : this.prodctorChangeTax
+              options : dealers
+            )
+            callback(year, quarter, this)
+          else
+            this.isShowPicker = false
         (error)->
           console.log(error)
       )
