@@ -41,11 +41,38 @@ Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
 )
 
-subject = ''
-html = ''
 userId = util.queryMap.userId if util.queryMap?.userId
 baseUrl = '/api/ufstrust/unimoney/web-unimoney-bill-list?userId=' + userId
-sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId + '&subject=' + subject + '&html=' + html
+sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId
+
+Vue.http.interceptors.push((request, next)->
+
+  next((response)->
+
+    if response.body.code isnt undefined
+      result =
+        code : response.body.code
+        message : response.body.message
+        items : []
+        total :
+          totalCount : 0
+          totalUnimoney : 0
+
+      response.body = result
+
+      $.modal(
+        title: ""
+        text: "errorCode:" + response.body.code + ", " + response.body.message
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      )
+
+    return response
+  )
+)
 
 bdVm = new Vue(
   el : '#byDistributor'
@@ -423,13 +450,13 @@ byDealerVm = new Vue(
           )
           $('#productor-picker').val(dealers[0])
           $("#productor-picker").productorPicker(
-            title : "經銷商"
+            title : ""
             changeEvent : this.prodctorChange
             options : dealers
           )
           $('#productor-picker-tax').val(dealers[0])
           $("#productor-picker-tax").productorPicker(
-            title : "經銷商"
+            title : ""
             changeEvent : this.prodctorChangeTax
             options : dealers
           )
@@ -790,31 +817,31 @@ agentVm = new Vue(
 bdVm.initData()
 
 $("#quarter-picker").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : bdVm.quarterChange
 )
 
 $("#month-picker").monthPicker(
-  title: "核可月份"
+  title: ""
   changeEvent : bdVm.monthChange
 )
 
 $("#quarter-picker-tax").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : bdVm.quarterChangeTax
 )
 
 $("#quarter-picker-by-dealer").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : byDealerVm.quarterChange
 )
 
 $("#month-picker-by-dealer").monthPicker(
-  title: "核可月份"
+  title: ""
   changeEvent : byDealerVm.monthChange
 )
 
 $("#quarter-picker-tax-by-dealer").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : byDealerVm.quarterChangeTax
 )

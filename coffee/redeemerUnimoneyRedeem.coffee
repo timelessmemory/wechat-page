@@ -3,6 +3,7 @@ $("title")[0].innerText = "優利金核銷系統"
 FastClick.attach(document.body)
 
 switchTap = (currentTarget)->
+  tmpVM.isShowFoot = if $(currentTarget).attr("href") is "#toBeChecked" then true else false
   ITEM_ON = "weui-bar__item--on"
   $a = $(currentTarget)
   href = $a.attr "href"
@@ -23,6 +24,38 @@ perPage = 10
 page = 1
 loading = false
 
+Vue.http.interceptors.push((request, next)->
+
+  next((response)->
+
+    if response.body.code isnt undefined
+      result =
+        code : response.body.code
+        message : response.body.message
+        items : []
+        total :
+          totalCount : 0
+          totalUnimoney : 0
+        _meta :
+          currentPage : 1
+          pageCount : 0
+
+      response.body = result
+
+      $.modal(
+        title: ""
+        text: "errorCode:" + response.body.code + ", " + response.body.message
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      )
+
+    return response
+  )
+)
+
 tbcVM = new Vue(
   el : '#toBeChecked'
   data :
@@ -40,7 +73,7 @@ tbcVM = new Vue(
       _self = this
       url = checkUrl + '&ids=' + param
       this.$http.get(url).then( (response)->
-        if response.data is 1
+        if response.data.successCount is 1
           $.modal(
             title : ""
             text : "優利金核可成功!"
@@ -77,7 +110,7 @@ tbcVM = new Vue(
       _self = this
       url = checkUrl + '&redeemAll=1'
       this.$http.get(url).then( (response)->
-        if response.data > 0
+        if response.data.successCount > 0
           $.modal(
             title : ""
             text : "優利金核可成功!"
@@ -136,10 +169,14 @@ tbcVM = new Vue(
       this.offCount = 0
       this.offSum = 0
 
-      year = new Date().getFullYear()
-      month = new Date().getMonth() + 1
-      quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
-      $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度')
+      # year = new Date().getFullYear()
+      # month = new Date().getMonth() + 1
+      # quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
+      # $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度')
+
+      year = 0
+      quarter = 0
+      $('#quarter-picker').val('全部')
 
       page = 1
 
@@ -150,15 +187,15 @@ tbcVM = new Vue(
           this.toBeCheckedData = response.data.items
           this.count = response.data.total.totalCount
           this.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
           if taget
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
     allowCheck: ()->
@@ -169,6 +206,20 @@ tbcVM = new Vue(
         "count" :  this.count - this.offCount
         "unimoney" : this.sum - this.offSum
       }
+)
+
+tmpVM = new Vue(
+  el: '#tmp'
+  data:
+    isShowFoot : true
+  computed:
+    toBeCheckedData : ()->
+      tbcVM.toBeCheckedData
+  methods:
+    allowCheck : ()->
+      tbcVM.allowCheck()
+    checkAll : ()->
+      tbcVM.checkAll()
 )
 
 hbcVM = new Vue(
@@ -231,7 +282,7 @@ hbcVM = new Vue(
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
     isMark: (param)->
@@ -285,10 +336,14 @@ necgVM = new Vue(
     loadData: (taget)->
       this.distributorName = ""
 
-      year = new Date().getFullYear()
-      month = new Date().getMonth() + 1
-      quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
-      $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度')
+      # year = new Date().getFullYear()
+      # month = new Date().getMonth() + 1
+      # quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
+      # $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度')
+
+      year = 0
+      quarter = 0
+      $('#quarter-picker-not-exchanged').val('全部')
 
       page = 1
 
@@ -299,15 +354,15 @@ necgVM = new Vue(
           this.notExchangedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
           if taget
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
 )
@@ -372,7 +427,7 @@ expVM = new Vue(
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
 )
@@ -650,22 +705,22 @@ $("#expired").infinite(20).on("infinite", ()->
 
 ##picker-init
 $("#quarter-picker").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : tbcVM.quarterChange
 )
 
 $("#quarter-picker-no-all").quarterPickerNoAll(
-  title: "季度"
+  title: ""
   changeEvent : hbcVM.quarterChange
 )
 
 $("#quarter-picker-not-exchanged").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : necgVM.quarterChange
 )
 
 $("#quarter-picker-expired").quarterPickerNoAll(
-  title: "季度"
+  title: ""
   changeEvent : expVM.quarterChange
 )
 

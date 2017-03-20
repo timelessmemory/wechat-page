@@ -15,7 +15,7 @@
   </div>
 
   <div class="weui-tab__bd">
-    <div ontouchstart="" id="toBeChecked" class="weui-tab__bd-item bg-item weui-tab__bd-item--active weui-pull-to-refresh" style="height: 94%;">
+    <div ontouchstart="" id="toBeChecked" class="weui-tab__bd-item bg-item weui-tab__bd-item--active weui-pull-to-refresh" style="height: 98%;">
 
         <div class="weui-pull-to-refresh__layer">
           <div class='weui-pull-to-refresh__arrow'></div>
@@ -55,7 +55,7 @@
             </div>
         </template>
 
-        <div class="weui-cells" style="margin-top: 0.2em;">
+        <div class="weui-cells" style="margin-top: 0.2rem;margin-bottom: 2rem;">
           <div class="weui-cell" v-for="item in toBeCheckedData">
             <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/medal.png"></div>
             <div class="weui-cell__bd">
@@ -74,7 +74,7 @@
               </div>
             </div>
             <div class="weui-cell__ft">
-                <button class="weui-btn weui-btn_default" :class="{'weui-btn_disabled' : allowCheck}" :disabled="allowCheck" v-on:click.stop="check(item.id)">核可</button>
+                <button class="weui-btn weui-btn_default" :class="{'weui-btn_disabled' : allowCheck()}" :disabled="allowCheck()" v-on:click.stop="check(item.id)">核可</button>
             </div>
           </div>
           <template v-if="toBeCheckedData.length == 0 && !isShowloading">
@@ -98,11 +98,17 @@
             </div>
         </template>
 
-        <template v-if="toBeCheckedData.length > 0">
+        <!-- <template v-if="toBeCheckedData.length > 0">
             <div class="check-all">
-                <button class="weui-btn weui-btn_default all-button" :class="{'weui-btn_disabled' : allowCheck}" :disabled="allowCheck" @click="checkAll()">全部核可</button>
+                <button class="weui-btn weui-btn_default all-button" :class="{'weui-btn_disabled' : allowCheck()}" :disabled="allowCheck()" @click="checkAll()">全部核可</button>
             </div>
-        </template>
+        </template> -->
+    </div>
+
+    <div id="tmp" v-if="toBeCheckedData.length > 0 && isShowFoot">
+        <div class="check-all">
+            <button class="weui-btn weui-btn_default all-button" :class="{'weui-btn_disabled' : allowCheck()}" :disabled="allowCheck()" @click="checkAll()">全部核可</button>
+        </div>
     </div>
 
     <div id="haveBeenChecked" class="weui-tab__bd-item bg-item">

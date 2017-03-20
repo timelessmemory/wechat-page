@@ -10,7 +10,7 @@
   </div>
 
   <div class="weui-tab__bd">
-    <div id="byDistributor" ontouchstart="" class="weui-tab__bd-item bg-item weui-tab__bd-item--active" style="height: 88%;">
+    <div id="byDistributor" ontouchstart="" class="weui-tab__bd-item bg-item weui-tab__bd-item--active" style="height: 92%;">
 
         <template v-if="isShowRadio">
           <div class="radio-group">
@@ -48,7 +48,7 @@
               </div>
           </template>
 
-          <div style="margin-bottom: 3px;color: #333333;">
+          <div style="color: #333333;padding-bottom: 3em;">
               <div class="weui-flex table-border-bottom table-border-top" v-if="dataList.length > 0">
                 <div class="weui-flex__item table-border-right table-border-left table-title">盘商名稱</div>
                 <div class="weui-flex__item table-border-right table-title">奖励金额</div>
@@ -132,7 +132,7 @@
         </div>
     </div>
 
-    <div id="byDealer" ontouchstart="" class="weui-tab__bd-item bg-item" style="height: 88%;">
+    <div id="byDealer" ontouchstart="" class="weui-tab__bd-item bg-item" style="height: 92%;">
         <template v-if="isShowRadio">
           <div class="radio-group">
             <label class="by-ps">
@@ -173,7 +173,7 @@
               </div>
           </template>
 
-          <div style="margin-bottom: 3px;color: #333333;">
+          <div style="color: #333333;padding-bottom: 3em;">
               <div class="weui-flex table-border-bottom table-border-top" v-if="dataList.length > 0">
                 <div class="weui-flex__item table-border-right table-border-left table-title">盘商名稱</div>
                 <div class="weui-flex__item table-border-right table-title">奖励金额</div>

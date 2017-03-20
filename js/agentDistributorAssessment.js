@@ -1,6 +1,6 @@
 var baseUrl, dmVM, userId, _ref;
 
-$("title")[0].innerText = "盤商管理";
+$("title")[0].innerText = "業績追蹤系統";
 
 Vue.filter('to-currency', function(value) {
   return accounting.formatNumber(value);
@@ -10,14 +10,40 @@ if ((_ref = util.queryMap) != null ? _ref.userId : void 0) {
   userId = util.queryMap.userId;
 }
 
-baseUrl = '/api/ufstrust/redeemer/web-assessment-list?userId=' + userId;
+baseUrl = '/api/ufstrust/agent/web-assessment-list?userId=' + userId;
+
+Vue.http.interceptors.push(function(request, next) {
+  return next(function(response) {
+    var result;
+    if (response.body.code !== void 0) {
+      result = {
+        code: response.body.code,
+        message: response.body.message,
+        items: [],
+        type: 'assessment'
+      };
+      response.body = result;
+      $.modal({
+        title: "",
+        text: "errorCode:" + response.body.code + ", " + response.body.message,
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      });
+    }
+    return response;
+  });
+});
 
 dmVM = new Vue({
   el: '#distributorManagement',
   data: {
     dataList: [],
     isShowloading: false,
-    distributorName: ''
+    distributorName: '',
+    isAllCheck: false
   },
   methods: {
     initData: function() {
@@ -29,6 +55,11 @@ dmVM = new Vue({
       this.isShowloading = true;
       url = baseUrl + '&year=' + year + '&quarter=' + quarter;
       return this.$http.get(url).then(function(response) {
+        if (response.data.type === 'target') {
+          this.isAllCheck = false;
+        } else {
+          this.isAllCheck = true;
+        }
         this.dataList = response.data.items;
         if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
           $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
@@ -56,6 +87,47 @@ dmVM = new Vue({
         url = url + '&searchKey=' + this.distributorName;
       }
       return this.$http.get(url).then(function(response) {
+        if (response.data.type === 'target') {
+          this.isAllCheck = false;
+        } else {
+          this.isAllCheck = true;
+        }
+        this.dataList = response.data.items;
+        if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
+          $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
+        }
+        return $('#status-picker').val('全部');
+      }, function(error) {
+        return console.log(error);
+      });
+    },
+    search: function() {
+      var quarter, status, tmpQuarter, tmpYear, url, year, yearQuarter;
+      yearQuarter = $('#quarter-picker').val();
+      year = 0;
+      quarter = 0;
+      if (yearQuarter !== "全部") {
+        tmpYear = yearQuarter.split(' ')[0];
+        tmpQuarter = yearQuarter.split(' ')[1];
+        year = tmpYear.substring(0, tmpYear.indexOf("年"));
+        if (tmpQuarter !== "全部") {
+          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
+        }
+      }
+      url = baseUrl + '&year=' + year + '&quarter=' + quarter;
+      if (!this.isAllCheck && $('#status-picker').val() !== '全部') {
+        status = $('#status-picker').val() === '已核可' ? 3 : '1,2';
+        url += '&targetStatus=' + status;
+      }
+      if (this.distributorName !== '') {
+        url = url + '&searchKey=' + this.distributorName;
+      }
+      return this.$http.get(url).then(function(response) {
+        if (response.data.type === 'target') {
+          this.isAllCheck = false;
+        } else {
+          this.isAllCheck = true;
+        }
         this.dataList = response.data.items;
         if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
           return $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
@@ -64,8 +136,8 @@ dmVM = new Vue({
         return console.log(error);
       });
     },
-    search: function() {
-      return this.quarterChange();
+    statusChange: function() {
+      return this.search();
     }
   },
   computed: {
@@ -94,6 +166,11 @@ dmVM = new Vue({
 dmVM.initData();
 
 $("#quarter-picker").quarterPickerNoAll({
-  title: "季度",
+  title: "",
   changeEvent: dmVM.quarterChange
+});
+
+$("#status-picker").statusPicker({
+  title: "",
+  changeEvent: dmVM.statusChange
 });

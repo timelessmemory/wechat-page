@@ -60,7 +60,7 @@
             <input type="text" id='quarter-picker' class="picker-custom"/>
         </div>
 
-        <div class="search-div" text="經銷商" v-show="!isCheckPs">
+        <div class="search-div" text="經銷商" v-show="!isCheckPs && isShowPicker">
             <input type="text" id='productor-picker-to-checked' class="picker-custom"/>
         </div>
 
@@ -158,7 +158,7 @@
             <input type="text" id='quarter-picker-no-all' class="picker-custom"/>
         </div>
 
-        <div class="search-div" text="經銷商" v-show="!isCheckPs">
+        <div class="search-div" text="經銷商" v-show="!isCheckPs  && isShowPicker">
             <input type="text" id='productor-picker-have-checked' class="picker-custom"/>
         </div>
 
@@ -247,7 +247,7 @@
             <input type="text" id='quarter-picker-not-exchanged' class="picker-custom"/>
         </div>
 
-        <div class="search-div" text="經銷商" v-show="!isCheckPs">
+        <div class="search-div" text="經銷商" v-show="!isCheckPs  && isShowPicker">
             <input type="text" id='productor-picker-not-exchanged' class="picker-custom"/>
         </div>
 
@@ -332,7 +332,7 @@
             <input type="text" id='quarter-picker-expired' class="picker-custom"/>
         </div>
 
-        <div class="search-div" text="經銷商" v-show="!isCheckPs">
+        <div class="search-div" text="經銷商" v-show="!isCheckPs  && isShowPicker">
             <input type="text" id='productor-picker-expired' class="picker-custom"/>
         </div>
 

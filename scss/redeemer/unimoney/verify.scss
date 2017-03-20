@@ -63,9 +63,9 @@
 
   .export-list {
     position: fixed;
-    bottom: 0px;
-    width: 94%;
-    margin: 10px 3%;
+    bottom: 1em;
+    width: 93%;
+    margin: 0px 3.4%;
     background-color: #fff;
   }
 
@@ -85,6 +85,7 @@
     margin: 5px 4%;
     color: grey;
     font-size: 13px;
+    padding-bottom: 1em;
   }
 
   .table-border-bottom .mark {
@@ -96,9 +97,11 @@
   text-align: left;
 }
 
-.weui-dialog .weui-dialog__bd {
+.weui-confirm .weui-dialog__bd {
   color: #999;
   text-align: left;
+  font-size: 13px;
+  padding-left: 1em;
 }
 
 .weui-dialog .weui-dialog__btn.default {
@@ -106,12 +109,11 @@
 }
 
 .weui-btn:after {
-  width: 199%;
   border: 1px solid black;
 }
 
 .weui-dialog {
-  max-width: 325px;
+  max-width: 331px;
 }
 
 .table-border-top, .table-item {

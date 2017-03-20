@@ -1,4 +1,4 @@
-var baseUrl, csVM, expVM, hbcVM, loading, necgVM, page, perPage, switchTap, tbcVM, userId, _ref;
+var baseDealerUrl, baseUrl, csVM, expVM, hbcVM, loading, necgVM, page, perPage, switchTap, tbcVM, userId, _ref;
 
 $("title")[0].innerText = "優利金核銷系統";
 
@@ -28,11 +28,53 @@ if ((_ref = util.queryMap) != null ? _ref.userId : void 0) {
 
 baseUrl = '/api/ufstrust/unimoney/web-unimoney-list?userId=' + userId;
 
+baseDealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId;
+
 perPage = 10;
 
 page = 1;
 
 loading = false;
+
+Vue.http.interceptors.push(function(request, next) {
+  return next(function(response) {
+    var result;
+    if (response.body.code !== void 0) {
+      if (response.url.indexOf(baseDealerUrl) !== -1) {
+        result = {
+          code: response.body.code,
+          message: response.body.message,
+          key: []
+        };
+      } else {
+        result = {
+          code: response.body.code,
+          message: response.body.message,
+          items: [],
+          total: {
+            totalCount: 0,
+            totalUnimoney: 0
+          },
+          _meta: {
+            currentPage: 1,
+            pageCount: 0
+          }
+        };
+      }
+      response.body = result;
+      $.modal({
+        title: "",
+        text: "errorCode:" + response.body.code + ", " + response.body.message,
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      });
+    }
+    return response;
+  });
+});
 
 tbcVM = new Vue({
   el: '#toBeChecked',
@@ -47,7 +89,8 @@ tbcVM = new Vue({
       count: 0,
       sum: 0
     },
-    dealers: []
+    dealers: [],
+    isShowPicker: true
   },
   methods: {
     quarterChange: function() {
@@ -96,6 +139,7 @@ tbcVM = new Vue({
     },
     loadDealer: function() {
       var dealerUrl, quarter, tmpQuarter, tmpYear, year, yearQuarter;
+      this.isShowPicker = true;
       yearQuarter = $('#quarter-picker').val();
       year = 0;
       quarter = 0;
@@ -107,7 +151,7 @@ tbcVM = new Vue({
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
         }
       }
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
       return this.$http.get(dealerUrl).then(function(response) {
         var key, values, _self;
         _self = this;
@@ -116,26 +160,29 @@ tbcVM = new Vue({
         for (key in response.data) {
           values = response.data[key];
         }
-        values.map(function(item) {
-          return _self.dealers.push(item.name);
-        });
-        $('#productor-picker-to-checked').val(this.dealers[0]);
-        $("#productor-picker-to-checked").productorPicker({
-          title: "經銷商",
-          changeEvent: this.getData,
-          options: this.dealers
-        });
-        return this.getData();
+        if (values.length > 0) {
+          values.map(function(item) {
+            return _self.dealers.push(item.name);
+          });
+          $('#productor-picker-to-checked').val(this.dealers[0]);
+          $("#productor-picker-to-checked").productorPicker({
+            title: "",
+            changeEvent: this.getData,
+            options: this.dealers
+          });
+          return this.getData();
+        } else {
+          return this.isShowPicker = false;
+        }
       }, function(error) {
         return console.log(error);
       });
     },
     loadData: function(taget) {
-      var month, quarter, url, year;
-      year = new Date().getFullYear();
-      month = new Date().getMonth() + 1;
-      quarter = month % 3 === 0 ? month / 3 : Math.floor(month / 3) + 1;
-      $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度');
+      var quarter, url, year;
+      year = 0;
+      quarter = 0;
+      $('#quarter-picker').val('全部');
       this.distributorName = "";
       this.byWhat = "distributor";
       page = 1;
@@ -145,9 +192,6 @@ tbcVM = new Vue({
         this.toBeCheckedData = response.data.items;
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         this.isLoadMore = response.data._meta.currentPage < response.data._meta.pageCount ? true : false;
         this.isShowloading = false;
         if (taget) {
@@ -155,7 +199,7 @@ tbcVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -192,7 +236,8 @@ hbcVM = new Vue({
       count: 0,
       sum: 0
     },
-    dealers: []
+    dealers: [],
+    isShowPicker: true
   },
   methods: {
     quarterChange: function() {
@@ -232,6 +277,7 @@ hbcVM = new Vue({
     },
     loadDealer: function() {
       var dealerUrl, quarter, tmpQuarter, tmpYear, year, yearQuarter;
+      this.isShowPicker = true;
       yearQuarter = $('#quarter-picker-no-all').val();
       year = 0;
       quarter = 0;
@@ -243,7 +289,7 @@ hbcVM = new Vue({
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
         }
       }
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
       return this.$http.get(dealerUrl).then(function(response) {
         var key, values, _self;
         _self = this;
@@ -252,16 +298,20 @@ hbcVM = new Vue({
         for (key in response.data) {
           values = response.data[key];
         }
-        values.map(function(item) {
-          return _self.dealers.push(item.name);
-        });
-        $('#productor-picker-have-checked').val(this.dealers[0]);
-        $("#productor-picker-have-checked").productorPicker({
-          title: "經銷商",
-          changeEvent: this.getData,
-          options: this.dealers
-        });
-        return this.getData();
+        if (values.length > 0) {
+          values.map(function(item) {
+            return _self.dealers.push(item.name);
+          });
+          $('#productor-picker-have-checked').val(this.dealers[0]);
+          $("#productor-picker-have-checked").productorPicker({
+            title: "",
+            changeEvent: this.getData,
+            options: this.dealers
+          });
+          return this.getData();
+        } else {
+          return this.isShowPicker = false;
+        }
       }, function(error) {
         return console.log(error);
       });
@@ -294,7 +344,7 @@ hbcVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -341,7 +391,8 @@ necgVM = new Vue({
       count: 0,
       sum: 0
     },
-    dealers: []
+    dealers: [],
+    isShowPicker: true
   },
   methods: {
     quarterChange: function() {
@@ -387,6 +438,7 @@ necgVM = new Vue({
     },
     loadDealer: function() {
       var dealerUrl, quarter, tmpQuarter, tmpYear, year, yearQuarter;
+      this.isShowPicker = true;
       yearQuarter = $('#quarter-picker-not-exchanged').val();
       year = 0;
       quarter = 0;
@@ -398,7 +450,7 @@ necgVM = new Vue({
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
         }
       }
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
       return this.$http.get(dealerUrl).then(function(response) {
         var key, values, _self;
         _self = this;
@@ -407,16 +459,20 @@ necgVM = new Vue({
         for (key in response.data) {
           values = response.data[key];
         }
-        values.map(function(item) {
-          return _self.dealers.push(item.name);
-        });
-        $('#productor-picker-not-exchanged').val(this.dealers[0]);
-        $("#productor-picker-not-exchanged").productorPicker({
-          title: "經銷商",
-          changeEvent: this.getData,
-          options: this.dealers
-        });
-        return this.getData();
+        if (values.length > 0) {
+          values.map(function(item) {
+            return _self.dealers.push(item.name);
+          });
+          $('#productor-picker-not-exchanged').val(this.dealers[0]);
+          $("#productor-picker-not-exchanged").productorPicker({
+            title: "",
+            changeEvent: this.getData,
+            options: this.dealers
+          });
+          return this.getData();
+        } else {
+          return this.isShowPicker = false;
+        }
       }, function(error) {
         return console.log(error);
       });
@@ -425,13 +481,12 @@ necgVM = new Vue({
       return this.getData();
     },
     loadData: function(taget) {
-      var month, quarter, url, year;
+      var quarter, url, year;
       this.distributorName = "";
       this.byWhat = "distributor";
-      year = new Date().getFullYear();
-      month = new Date().getMonth() + 1;
-      quarter = month % 3 === 0 ? month / 3 : Math.floor(month / 3) + 1;
-      $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度');
+      year = 0;
+      quarter = 0;
+      $('#quarter-picker-not-exchanged').val('全部');
       page = 1;
       this.isShowloading = true;
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage + '&byRole=' + this.byWhat;
@@ -439,9 +494,6 @@ necgVM = new Vue({
         this.notExchangedData = response.data.items;
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker-not-exchanged').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         this.isLoadMore = response.data._meta.currentPage < response.data._meta.pageCount ? true : false;
         this.isShowloading = false;
         if (taget) {
@@ -449,7 +501,7 @@ necgVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -486,7 +538,8 @@ expVM = new Vue({
       count: 0,
       sum: 0
     },
-    dealers: []
+    dealers: [],
+    isShowPicker: true
   },
   methods: {
     quarterChange: function() {
@@ -526,6 +579,7 @@ expVM = new Vue({
     },
     loadDealer: function() {
       var dealerUrl, quarter, tmpQuarter, tmpYear, year, yearQuarter;
+      this.isShowPicker = true;
       yearQuarter = $('#quarter-picker-expired').val();
       year = 0;
       quarter = 0;
@@ -537,7 +591,7 @@ expVM = new Vue({
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
         }
       }
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
       return this.$http.get(dealerUrl).then(function(response) {
         var key, values, _self;
         _self = this;
@@ -546,16 +600,20 @@ expVM = new Vue({
         for (key in response.data) {
           values = response.data[key];
         }
-        values.map(function(item) {
-          return _self.dealers.push(item.name);
-        });
-        $('#productor-picker-expired').val(this.dealers[0]);
-        $("#productor-picker-expired").productorPicker({
-          title: "經銷商",
-          changeEvent: this.getData,
-          options: this.dealers
-        });
-        return this.getData();
+        if (values.length > 0) {
+          values.map(function(item) {
+            return _self.dealers.push(item.name);
+          });
+          $('#productor-picker-expired').val(this.dealers[0]);
+          $("#productor-picker-expired").productorPicker({
+            title: "",
+            changeEvent: this.getData,
+            options: this.dealers
+          });
+          return this.getData();
+        } else {
+          return this.isShowPicker = false;
+        }
       }, function(error) {
         return console.log(error);
       });
@@ -588,7 +646,7 @@ expVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -925,21 +983,21 @@ $("#expired").infinite(20).on("infinite", function() {
 });
 
 $("#quarter-picker").quarterPicker({
-  title: "季度",
+  title: "",
   changeEvent: tbcVM.quarterChange
 });
 
 $("#quarter-picker-no-all").quarterPickerNoAll({
-  title: "季度",
+  title: "",
   changeEvent: hbcVM.quarterChange
 });
 
 $("#quarter-picker-not-exchanged").quarterPicker({
-  title: "季度",
+  title: "",
   changeEvent: necgVM.quarterChange
 });
 
 $("#quarter-picker-expired").quarterPickerNoAll({
-  title: "季度",
+  title: "",
   changeEvent: expVM.quarterChange
 });

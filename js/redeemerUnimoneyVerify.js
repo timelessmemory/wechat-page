@@ -1,4 +1,4 @@
-var ShowTax, baseUrl, getWithYear, getWithYearAndMonth, html, sendEmailUrl, subject, switchTap, userId, vsVm, _ref;
+var ShowTax, baseUrl, getWithYear, getWithYearAndMonth, sendEmailUrl, switchTap, userId, vsVm, _ref;
 
 $("title")[0].innerText = "優利金對賬系統";
 
@@ -57,17 +57,41 @@ Vue.filter('to-currency', function(value) {
   return accounting.formatNumber(value);
 });
 
-subject = '';
-
-html = '';
-
 if ((_ref = util.queryMap) != null ? _ref.userId : void 0) {
   userId = util.queryMap.userId;
 }
 
 baseUrl = '/api/ufstrust/unimoney/web-unimoney-bill-list?userId=' + userId;
 
-sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId + '&subject=' + subject + '&html=' + html;
+sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId;
+
+Vue.http.interceptors.push(function(request, next) {
+  return next(function(response) {
+    var result;
+    if (response.body.code !== void 0) {
+      result = {
+        code: response.body.code,
+        message: response.body.message,
+        items: [],
+        total: {
+          totalCount: 0,
+          totalUnimoney: 0
+        }
+      };
+      response.body = result;
+      $.modal({
+        title: "",
+        text: "errorCode:" + response.body.code + ", " + response.body.message,
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      });
+    }
+    return response;
+  });
+});
 
 vsVm = new Vue({
   el: '#verifySystem',
@@ -399,16 +423,16 @@ vsVm = new Vue({
 vsVm.initData();
 
 $("#quarter-picker").quarterPicker({
-  title: "季度",
+  title: "",
   changeEvent: vsVm.quarterChange
 });
 
 $("#month-picker").monthPicker({
-  title: "核可月份",
+  title: "",
   changeEvent: vsVm.monthChange
 });
 
 $("#quarter-picker-tax").quarterPicker({
-  title: "季度",
+  title: "",
   changeEvent: vsVm.quarterChangeTax
 });

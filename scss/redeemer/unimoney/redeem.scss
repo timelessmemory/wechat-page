@@ -68,14 +68,17 @@
   .all-button {
     line-height: 3;
     font-size: 17px;
+    margin: 0px 3.4%;
+    width: 93%;
+    top: 22%;
   }
 
   .check-all {
     position: fixed;
-    bottom: 0px;
-    width: 94%;
-    margin: 10px 3%;
-    background-color: #fff;
+    bottom: 0em;
+    width: 100%;
+    height: 12%;
+    background-color: #fafafa;
   }
 
   .total-desc {
@@ -116,7 +119,7 @@
   }
 
   .weui-pull-to-refresh__layer {
-    background-color: #fff
+    background-color: #fafafa
   }
 
   .weui-navbar {
@@ -126,6 +129,10 @@
   .weui-tab__bd-item.weui-pull-to-refresh {
     position: relative;
     top: 12px;
+  }
+
+  .weui-tab__bd .weui-tab__bd-item {
+    height: 106%;
   }
 
   .weui-btn_default {
@@ -155,4 +162,8 @@
 
 .weui-dialog__btn {
   color: #000;
+}
+
+.weui-dialog__bd {
+  text-align: left;
 }

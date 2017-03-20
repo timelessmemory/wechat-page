@@ -1,4 +1,4 @@
-var baseUrl, checkUrl, csVM, expVM, hbcVM, loading, necgVM, page, perPage, switchTap, tbcVM, userId, _ref;
+var baseUrl, checkUrl, csVM, expVM, hbcVM, loading, necgVM, page, perPage, switchTap, tbcVM, tmpVM, userId, _ref;
 
 $("title")[0].innerText = "優利金核銷系統";
 
@@ -6,6 +6,7 @@ FastClick.attach(document.body);
 
 switchTap = function(currentTarget) {
   var $a, ITEM_ON, href;
+  tmpVM.isShowFoot = $(currentTarget).attr("href") === "#toBeChecked" ? true : false;
   ITEM_ON = "weui-bar__item--on";
   $a = $(currentTarget);
   href = $a.attr("href");
@@ -36,6 +37,38 @@ page = 1;
 
 loading = false;
 
+Vue.http.interceptors.push(function(request, next) {
+  return next(function(response) {
+    var result;
+    if (response.body.code !== void 0) {
+      result = {
+        code: response.body.code,
+        message: response.body.message,
+        items: [],
+        total: {
+          totalCount: 0,
+          totalUnimoney: 0
+        },
+        _meta: {
+          currentPage: 1,
+          pageCount: 0
+        }
+      };
+      response.body = result;
+      $.modal({
+        title: "",
+        text: "errorCode:" + response.body.code + ", " + response.body.message,
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      });
+    }
+    return response;
+  });
+});
+
 tbcVM = new Vue({
   el: '#toBeChecked',
   data: {
@@ -55,7 +88,7 @@ tbcVM = new Vue({
       _self = this;
       url = checkUrl + '&ids=' + param;
       return this.$http.get(url).then(function(response) {
-        if (response.data === 1) {
+        if (response.data.successCount === 1) {
           return $.modal({
             title: "",
             text: "優利金核可成功!",
@@ -98,7 +131,7 @@ tbcVM = new Vue({
       _self = this;
       url = checkUrl + '&redeemAll=1';
       return this.$http.get(url).then(function(response) {
-        if (response.data > 0) {
+        if (response.data.successCount > 0) {
           return $.modal({
             title: "",
             text: "優利金核可成功!",
@@ -162,14 +195,13 @@ tbcVM = new Vue({
       return this.quarterChange();
     },
     loadData: function(taget) {
-      var month, quarter, url, year;
+      var quarter, url, year;
       this.distributorName = "";
       this.offCount = 0;
       this.offSum = 0;
-      year = new Date().getFullYear();
-      month = new Date().getMonth() + 1;
-      quarter = month % 3 === 0 ? month / 3 : Math.floor(month / 3) + 1;
-      $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度');
+      year = 0;
+      quarter = 0;
+      $('#quarter-picker').val('全部');
       page = 1;
       this.isShowloading = true;
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage;
@@ -177,9 +209,6 @@ tbcVM = new Vue({
         this.toBeCheckedData = response.data.items;
         this.count = response.data.total.totalCount;
         this.sum = response.data.total.totalUnimoney;
-        if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         this.isLoadMore = response.data._meta.currentPage < response.data._meta.pageCount ? true : false;
         this.isShowloading = false;
         if (taget) {
@@ -187,7 +216,7 @@ tbcVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -206,6 +235,26 @@ tbcVM = new Vue({
         "count": this.count - this.offCount,
         "unimoney": this.sum - this.offSum
       };
+    }
+  }
+});
+
+tmpVM = new Vue({
+  el: '#tmp',
+  data: {
+    isShowFoot: true
+  },
+  computed: {
+    toBeCheckedData: function() {
+      return tbcVM.toBeCheckedData;
+    }
+  },
+  methods: {
+    allowCheck: function() {
+      return tbcVM.allowCheck();
+    },
+    checkAll: function() {
+      return tbcVM.checkAll();
     }
   }
 });
@@ -275,7 +324,7 @@ hbcVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -341,12 +390,11 @@ necgVM = new Vue({
       return this.quarterChange();
     },
     loadData: function(taget) {
-      var month, quarter, url, year;
+      var quarter, url, year;
       this.distributorName = "";
-      year = new Date().getFullYear();
-      month = new Date().getMonth() + 1;
-      quarter = month % 3 === 0 ? month / 3 : Math.floor(month / 3) + 1;
-      $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度');
+      year = 0;
+      quarter = 0;
+      $('#quarter-picker-not-exchanged').val('全部');
       page = 1;
       this.isShowloading = true;
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage;
@@ -354,9 +402,6 @@ necgVM = new Vue({
         this.notExchangedData = response.data.items;
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker-not-exchanged').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         this.isLoadMore = response.data._meta.currentPage < response.data._meta.pageCount ? true : false;
         this.isShowloading = false;
         if (taget) {
@@ -364,7 +409,7 @@ necgVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -437,7 +482,7 @@ expVM = new Vue({
         }
       }, function(error) {
         if (taget) {
-          switchTap(e);
+          switchTap(taget);
         }
         return console.log(error);
       });
@@ -730,21 +775,21 @@ $("#expired").infinite(20).on("infinite", function() {
 });
 
 $("#quarter-picker").quarterPicker({
-  title: "季度",
+  title: "",
   changeEvent: tbcVM.quarterChange
 });
 
 $("#quarter-picker-no-all").quarterPickerNoAll({
-  title: "季度",
+  title: "",
   changeEvent: hbcVM.quarterChange
 });
 
 $("#quarter-picker-not-exchanged").quarterPicker({
-  title: "季度",
+  title: "",
   changeEvent: necgVM.quarterChange
 });
 
 $("#quarter-picker-expired").quarterPickerNoAll({
-  title: "季度",
+  title: "",
   changeEvent: expVM.quarterChange
 });

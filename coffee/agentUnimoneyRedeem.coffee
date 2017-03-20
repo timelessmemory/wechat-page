@@ -18,9 +18,49 @@ Vue.filter('to-currency', (value) ->
 
 userId = util.queryMap.userId if util.queryMap?.userId
 baseUrl = '/api/ufstrust/unimoney/web-unimoney-list?userId=' + userId
+baseDealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId
 perPage = 10
 page = 1
 loading = false
+
+Vue.http.interceptors.push((request, next)->
+
+  next((response)->
+
+    if response.body.code isnt undefined
+
+      if response.url.indexOf(baseDealerUrl) isnt -1
+        result =
+          code : response.body.code
+          message : response.body.message
+          key : []
+      else
+        result =
+          code : response.body.code
+          message : response.body.message
+          items : []
+          total :
+            totalCount : 0
+            totalUnimoney : 0
+          _meta :
+            currentPage : 1
+            pageCount : 0
+
+      response.body = result
+
+      $.modal(
+        title: ""
+        text: "errorCode:" + response.body.code + ", " + response.body.message
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      )
+
+    return response
+  )
+)
 
 tbcVM = new Vue(
   el : '#toBeChecked'
@@ -35,6 +75,7 @@ tbcVM = new Vue(
       count : 0
       sum : 0
     dealers : []
+    isShowPicker : true
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -72,6 +113,7 @@ tbcVM = new Vue(
     search : ()->
       this.getData()
     loadDealer : ()->
+      this.isShowPicker = true
       yearQuarter = $('#quarter-picker').val()
       year = 0
       quarter = 0
@@ -82,7 +124,7 @@ tbcVM = new Vue(
         if tmpQuarter isnt "全部"
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
       this.$http.get(dealerUrl).then(
         (response)->
           _self = this
@@ -90,24 +132,32 @@ tbcVM = new Vue(
           values = []
           for key of response.data
             values = response.data[key]
-          values.map((item)->
-            _self.dealers.push(item.name)
-          )
-          $('#productor-picker-to-checked').val(this.dealers[0])
-          $("#productor-picker-to-checked").productorPicker(
-            title : "經銷商"
-            changeEvent : this.getData
-            options:this.dealers
-          )
-          this.getData()
+
+          if values.length > 0
+            values.map((item)->
+              _self.dealers.push(item.name)
+            )
+            $('#productor-picker-to-checked').val(this.dealers[0])
+            $("#productor-picker-to-checked").productorPicker(
+              title : ""
+              changeEvent : this.getData
+              options:this.dealers
+            )
+            this.getData()
+          else
+            this.isShowPicker = false
         (error)->
           console.log(error)
       )
     loadData : (taget)->
-      year = new Date().getFullYear()
-      month = new Date().getMonth() + 1
-      quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
-      $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度')
+      # year = new Date().getFullYear()
+      # month = new Date().getMonth() + 1
+      # quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
+      # $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度')
+
+      year = 0
+      quarter = 0
+      $('#quarter-picker').val('全部')
 
       this.distributorName = ""
       this.byWhat = "distributor"
@@ -120,15 +170,15 @@ tbcVM = new Vue(
           this.toBeCheckedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
           if taget
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
   computed :
@@ -156,6 +206,7 @@ hbcVM = new Vue(
       count : 0
       sum : 0
     dealers : []
+    isShowPicker : true
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -187,6 +238,7 @@ hbcVM = new Vue(
           console.log error
       )
     loadDealer : ()->
+      this.isShowPicker = true
       yearQuarter = $('#quarter-picker-no-all').val()
       year = 0
       quarter = 0
@@ -197,7 +249,7 @@ hbcVM = new Vue(
         if tmpQuarter isnt "全部"
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
       this.$http.get(dealerUrl).then(
         (response)->
           _self = this
@@ -205,16 +257,19 @@ hbcVM = new Vue(
           values = []
           for key of response.data
             values = response.data[key]
-          values.map((item)->
-            _self.dealers.push(item.name)
-          )
-          $('#productor-picker-have-checked').val(this.dealers[0])
-          $("#productor-picker-have-checked").productorPicker(
-            title : "經銷商"
-            changeEvent : this.getData
-            options:this.dealers
-          )
-          this.getData()
+          if values.length > 0
+            values.map((item)->
+              _self.dealers.push(item.name)
+            )
+            $('#productor-picker-have-checked').val(this.dealers[0])
+            $("#productor-picker-have-checked").productorPicker(
+              title : ""
+              changeEvent : this.getData
+              options:this.dealers
+            )
+            this.getData()
+          else
+            this.isShowPicker = false
         (error)->
           console.log(error)
       )
@@ -246,7 +301,7 @@ hbcVM = new Vue(
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
     isMark: (param)->
@@ -281,6 +336,7 @@ necgVM = new Vue(
       count : 0
       sum : 0
     dealers : []
+    isShowPicker : true
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -316,6 +372,7 @@ necgVM = new Vue(
           console.log error
       )
     loadDealer : ()->
+      this.isShowPicker = true
       yearQuarter = $('#quarter-picker-not-exchanged').val()
       year = 0
       quarter = 0
@@ -326,7 +383,7 @@ necgVM = new Vue(
         if tmpQuarter isnt "全部"
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
       this.$http.get(dealerUrl).then(
         (response)->
           _self = this
@@ -334,16 +391,19 @@ necgVM = new Vue(
           values = []
           for key of response.data
             values = response.data[key]
-          values.map((item)->
-            _self.dealers.push(item.name)
-          )
-          $('#productor-picker-not-exchanged').val(this.dealers[0])
-          $("#productor-picker-not-exchanged").productorPicker(
-            title : "經銷商"
-            changeEvent : this.getData
-            options:this.dealers
-          )
-          this.getData()
+          if values.length > 0
+            values.map((item)->
+              _self.dealers.push(item.name)
+            )
+            $('#productor-picker-not-exchanged').val(this.dealers[0])
+            $("#productor-picker-not-exchanged").productorPicker(
+              title : ""
+              changeEvent : this.getData
+              options:this.dealers
+            )
+            this.getData()
+          else
+            this.isShowPicker = false
         (error)->
           console.log(error)
       )
@@ -353,10 +413,14 @@ necgVM = new Vue(
       this.distributorName = ""
       this.byWhat = "distributor"
 
-      year = new Date().getFullYear()
-      month = new Date().getMonth() + 1
-      quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
-      $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度')
+      # year = new Date().getFullYear()
+      # month = new Date().getMonth() + 1
+      # quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
+      # $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度')
+
+      year = 0
+      quarter = 0
+      $('#quarter-picker-not-exchanged').val('全部')
 
       page = 1
 
@@ -367,15 +431,15 @@ necgVM = new Vue(
           this.notExchangedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
           if taget
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
   computed:
@@ -403,6 +467,7 @@ expVM = new Vue(
       count : 0
       sum : 0
     dealers : []
+    isShowPicker : true
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -434,6 +499,7 @@ expVM = new Vue(
           console.log error
       )
     loadDealer : ()->
+      this.isShowPicker = true
       yearQuarter = $('#quarter-picker-expired').val()
       year = 0
       quarter = 0
@@ -444,7 +510,7 @@ expVM = new Vue(
         if tmpQuarter isnt "全部"
           quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
-      dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
+      dealerUrl = baseDealerUrl + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
       this.$http.get(dealerUrl).then(
         (response)->
           _self = this
@@ -452,16 +518,19 @@ expVM = new Vue(
           values = []
           for key of response.data
             values = response.data[key]
-          values.map((item)->
-            _self.dealers.push(item.name)
-          )
-          $('#productor-picker-expired').val(this.dealers[0])
-          $("#productor-picker-expired").productorPicker(
-            title : "經銷商"
-            changeEvent : this.getData
-            options:this.dealers
-          )
-          this.getData()
+          if values.length > 0
+            values.map((item)->
+              _self.dealers.push(item.name)
+            )
+            $('#productor-picker-expired').val(this.dealers[0])
+            $("#productor-picker-expired").productorPicker(
+              title : ""
+              changeEvent : this.getData
+              options:this.dealers
+            )
+            this.getData()
+          else
+            this.isShowPicker = false
         (error)->
           console.log(error)
       )
@@ -493,7 +562,7 @@ expVM = new Vue(
             switchTap(taget)
         (error)->
           if taget
-            switchTap(e)
+            switchTap(taget)
           console.log error
       )
   computed:
@@ -801,22 +870,22 @@ $("#expired").infinite(20).on("infinite", ()->
 
 ##picker-init
 $("#quarter-picker").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : tbcVM.quarterChange
 )
 
 $("#quarter-picker-no-all").quarterPickerNoAll(
-  title: "季度"
+  title: ""
   changeEvent : hbcVM.quarterChange
 )
 
 $("#quarter-picker-not-exchanged").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : necgVM.quarterChange
 )
 
 $("#quarter-picker-expired").quarterPickerNoAll(
-  title: "季度"
+  title: ""
   changeEvent : expVM.quarterChange
 )
 

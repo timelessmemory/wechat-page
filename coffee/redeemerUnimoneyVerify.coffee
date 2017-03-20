@@ -41,11 +41,38 @@ Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
 )
 
-subject = ''
-html = ''
 userId = util.queryMap.userId if util.queryMap?.userId
 baseUrl = '/api/ufstrust/unimoney/web-unimoney-bill-list?userId=' + userId
-sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId + '&subject=' + subject + '&html=' + html
+sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId
+
+Vue.http.interceptors.push((request, next)->
+
+  next((response)->
+
+    if response.body.code isnt undefined
+      result =
+        code : response.body.code
+        message : response.body.message
+        items : []
+        total :
+          totalCount : 0
+          totalUnimoney : 0
+
+      response.body = result
+
+      $.modal(
+        title: ""
+        text: "errorCode:" + response.body.code + ", " + response.body.message
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      )
+
+    return response
+  )
+)
 
 vsVm = new Vue(
   el : '#verifySystem'
@@ -345,16 +372,16 @@ vsVm = new Vue(
 vsVm.initData()
 
 $("#quarter-picker").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : vsVm.quarterChange
 )
 
 $("#month-picker").monthPicker(
-  title: "核可月份"
+  title: ""
   changeEvent : vsVm.monthChange
 )
 
 $("#quarter-picker-tax").quarterPicker(
-  title: "季度"
+  title: ""
   changeEvent : vsVm.quarterChangeTax
 )

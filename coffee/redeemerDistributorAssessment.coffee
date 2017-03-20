@@ -1,11 +1,37 @@
-$("title")[0].innerText = "業績追蹤系統"
+$("title")[0].innerText = "盤商管理"
 
 Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
 )
 
 userId = util.queryMap.userId if util.queryMap?.userId
-baseUrl = '/api/ufstrust/agent/web-assessment-list?userId=' + userId
+baseUrl = '/api/ufstrust/redeemer/web-assessment-list?userId=' + userId
+
+Vue.http.interceptors.push((request, next)->
+
+  next((response)->
+
+    if response.body.code isnt undefined
+      result =
+        code : response.body.code
+        message : response.body.message
+        items : []
+
+      response.body = result
+
+      $.modal(
+        title: ""
+        text: "errorCode:" + response.body.code + ", " + response.body.message
+        buttons: [
+          {
+            text: "確認"
+          }
+        ]
+      )
+
+    return response
+  )
+)
 
 dmVM = new Vue(
   el : '#distributorManagement'
@@ -13,7 +39,6 @@ dmVM = new Vue(
     dataList : []
     isShowloading : false
     distributorName : ''
-    isAllCheck : false
   methods :
     initData : ()->
       year = new Date().getFullYear()
@@ -25,10 +50,6 @@ dmVM = new Vue(
       url = baseUrl + '&year=' + year + '&quarter=' + quarter
       this.$http.get(url).then(
         (response)->
-          if response.data.type is 'target'
-            this.isAllCheck = false
-          else
-            this.isAllCheck = true
           this.dataList = response.data.items
           if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
             $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
@@ -51,47 +72,14 @@ dmVM = new Vue(
         url = url + '&searchKey=' + this.distributorName
       this.$http.get(url).then(
         (response)->
-          if response.data.type is 'target'
-            this.isAllCheck = false
-          else
-            this.isAllCheck = true
           this.dataList = response.data.items
           if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
             $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
-          $('#status-picker').val '全部'
         (error)->
           console.log error
       )
     search : ()->
-      yearQuarter = $('#quarter-picker').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
-      url = baseUrl + '&year=' + year + '&quarter=' + quarter
-      if not this.isAllCheck and $('#status-picker').val() isnt '全部'
-        status = if $('#status-picker').val() is '已核可' then 3 else '1,2'
-        url += '&targetStatus=' + status
-      if this.distributorName isnt ''
-        url = url + '&searchKey=' + this.distributorName
-      this.$http.get(url).then(
-        (response)->
-          if response.data.type is 'target'
-            this.isAllCheck = false
-          else
-            this.isAllCheck = true
-          this.dataList = response.data.items
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
-        (error)->
-          console.log error
-      )
-    statusChange : ()->
-      this.search()
+      this.quarterChange()
   computed :
     total : ()->
       count = this.dataList.length
@@ -116,11 +104,6 @@ dmVM = new Vue(
 dmVM.initData()
 
 $("#quarter-picker").quarterPickerNoAll(
-  title: "季度"
-  changeEvent : dmVM.quarterChange
-)
-
-$("#status-picker").statusPicker(
   title: ""
-  changeEvent : dmVM.statusChange
+  changeEvent : dmVM.quarterChange
 )
