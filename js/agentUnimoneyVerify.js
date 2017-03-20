@@ -454,7 +454,8 @@ byDealerVm = new Vue({
     taxList: [],
     disableAccountButton: false,
     disableTaxButton: false,
-    whichList: 'accountList'
+    whichList: 'accountList',
+    isShowPicker: true
   },
   methods: {
     initData: function() {
@@ -467,9 +468,9 @@ byDealerVm = new Vue({
       quarter = month % 3 === 0 ? month / 3 : Math.floor(month / 3) + 1;
       $('#quarter-picker-by-dealer').val(year + '年' + ' ' + '第' + quarter + '季度');
       $('#month-picker-by-dealer').val('請選擇');
-      this.isShowloading = true;
       return this.loadDealer(year, quarter, function(year, quarter, _self) {
         var url;
+        _self.isShowloading = true;
         url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val();
         return _self.$http.get(url).then(function(response) {
           this.isShowRadio = ShowTax(response.data.items, this.taxList);
@@ -491,6 +492,7 @@ byDealerVm = new Vue({
     },
     loadDealer: function(year, quarter, callback) {
       var dealerUrl;
+      this.isShowPicker = true;
       dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
       return this.$http.get(dealerUrl).then(function(response) {
         var dealers, key, values;
@@ -499,22 +501,26 @@ byDealerVm = new Vue({
           values = response.data[key];
         }
         dealers = [];
-        values.map(function(item) {
-          return dealers.push(item.name);
-        });
-        $('#productor-picker').val(dealers[0]);
-        $("#productor-picker").productorPicker({
-          title: "",
-          changeEvent: this.prodctorChange,
-          options: dealers
-        });
-        $('#productor-picker-tax').val(dealers[0]);
-        $("#productor-picker-tax").productorPicker({
-          title: "",
-          changeEvent: this.prodctorChangeTax,
-          options: dealers
-        });
-        return callback(year, quarter, this);
+        if (values.length > 0) {
+          values.map(function(item) {
+            return dealers.push(item.name);
+          });
+          $('#productor-picker').val(dealers[0]);
+          $("#productor-picker").productorPicker({
+            title: "",
+            changeEvent: this.prodctorChange,
+            options: dealers
+          });
+          $('#productor-picker-tax').val(dealers[0]);
+          $("#productor-picker-tax").productorPicker({
+            title: "",
+            changeEvent: this.prodctorChangeTax,
+            options: dealers
+          });
+          return callback(year, quarter, this);
+        } else {
+          return this.isShowPicker = false;
+        }
       }, function(error) {
         return console.log(error);
       });
