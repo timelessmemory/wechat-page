@@ -161,7 +161,7 @@
               <input type="text" id='month-picker-by-dealer' class="picker-custom"/>
           </div>
 
-          <div class="search-div" text="經銷商">
+          <div class="search-div" text="經銷商" v-show="isShowPicker">
             <input type="text" id='productor-picker' class="picker-custom"/>
           </div>
 
