@@ -1,53 +1,54 @@
 .unimoney-check-business {
 
   a.weui-navbar__item.weui-bar__item--on {
-    border-bottom: solid 2px black;
+    border-bottom: solid 0.2rem $ufs-orange-theme-color;
+    color: $ufs-orange-theme-color;
   }
 
   .weui-navbar__item {
-    padding: 6px 0;
+    padding: 0.6rem 0;
   }
 
   .weui-search-bar {
     padding: 0px;
-    margin: 0 16px;
-    height: 35px;
+    margin: 0 1.6rem;
+    height: 3.5rem;
   }
 
   .weui-search-bar__label {
-    line-height: 35px;
+    line-height: 3.2rem;
   }
 
   .weui-search-bar__box {
-    line-height: 35px;
+    line-height: 4rem;
   }
 
   .weui-search-bar__box .weui-icon-search {
-    line-height: 35px;
+    line-height: 3.7rem;
   }
 
   .weui-search-bar__box .weui-icon-clear{
-    line-height: 35px;
+    line-height: 3.7rem;
   }
 
   .weui-navbar + .weui-tab__bd {
-    padding-top: 38px;
+    padding-top: 3.8rem;
     background-color: #FAFAFA;
   }
 
   .weui-search-bar__label .weui-search-bar__form:after {
-    border-radius: 5px;
+    border-radius: 0.5rem;
   }
 
   .weui-search-bar__box .weui-search-bar__input {
-    padding: 6px 0;
+    padding: 0.6rem 0;
   }
 
   .row-cell {
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    font-size: 10px;
+    font-size: 1.4rem;
   }
 
   .col-cell {
@@ -56,37 +57,49 @@
     flex: 1;
   }
 
+  .col-cell-value {
+    -webkit-box-flex: 1.2;
+    -webkit-flex: 1.2;
+    flex: 1.2;
+  }
+
+  .img-top {
+    height: 7.6rem;
+  }
+
   .weui-cell__bd {
-    font-size: 12px;
+    font-size: 1.6rem;
+    margin-left: 1rem;
   }
 
   .weui-btn {
     line-height: 1.55;
-    font-size: 12px;
+    font-size: 1.4rem;
   }
 
   .all-button {
     line-height: 3;
-    font-size: 17px;
+    font-size: 1.8rem;
   }
 
   .check-all {
     position: fixed;
     bottom: 0px;
     width: 94%;
-    margin: 10px 3%;
+    margin: 1rem 3%;
     background-color: #fff;
   }
 
   .total-desc {
-    font-size: 16px;
+    font-size: 1.6rem;
     margin-left:1em;
     color:grey;
 
     span {
       color: black;
       font-weight: bold;
-      font-size: 17px;
+      font-style: italic;
+      font-size: 1.6rem;
     }
   }
 
@@ -95,15 +108,15 @@
   }
 
   .top-distance {
-    margin-top: 10px;
+    margin-top: 1rem;
   }
 
   .weui-pull-to-refresh__layer {
-    padding:4px;
+    padding:0.4rem;
   }
 
   .weui-pull-to-refresh {
-    margin-top: -42px;
+    margin-top: -4.2rem;
     height:104%;
   }
 
@@ -128,8 +141,8 @@
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    height: 2.2em;
-    font-size: 18px;
+    height: 3.2em;
+    font-size: 1.6rem;
     -webkit-box-align: center;
     -webkit-align-items: center;
     align-items: center;
@@ -195,22 +208,22 @@
 }
 
 .picker-custom {
-  font-size: 16px;
+  font-size: 1.6rem;
   text-align: right;
   width: 100%;
-  height: 36px;
-  line-height: 36px;
+  height: 3.6rem;
+  line-height: 3.6rem;
   padding-right: 2.3em;
   color: grey;
   border: 1px solid #e6e6ea;
-  border-radius: 5px;
+  border-radius: 0.5rem;
   -webkit-appearance: none;
   background-color: white;
 }
 
 .search-div {
   position: relative;
-  margin: 1em 16px;
+  margin: 1em 1.6rem;
 }
 
 .search-div:after {
@@ -218,7 +231,7 @@
   position: absolute;
   top: 0.05em;
   right: 1em;
-  font-size: 20px;
+  font-size: 2rem;
   color: grey;
 }
 
@@ -227,7 +240,7 @@
   position: absolute;
   top: 0.4em;
   left: 1.4em;
-  font-size: 16px;
+  font-size: 1.6rem;
 }
 
 .picker-items-col.col-province {
@@ -239,7 +252,7 @@
 }
 
 .weui-picker-modal .picker-item, .toolbar .title, .toolbar {
-  font-size: 1.33rem;
+  font-size: 1.8rem;
 }
 
 .city-picker .picker-items-col {
@@ -255,3 +268,10 @@
   padding: 0 1rem;
 }
 
+.weui-loadmore {
+  font-size: 1.4rem;
+}
+
+.weui-cell__hd img {
+  margin-right: 0;
+}

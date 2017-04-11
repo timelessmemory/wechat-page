@@ -37,6 +37,29 @@ getWithYearAndMonth = (items, year, month)->
   )
   return result
 
+getDealerId = (dealerData, name)->
+  id = ''
+  dealerData.map((item)->
+    for key of item
+      if item[key].name is name
+        id = key
+  )
+  return id
+
+customShowConfirmAccount = (context)->
+  $('.weui-dialog.weui-confirm.weui-dialog--visible').hide()
+  window.setTimeout(()->
+    $('.weui-dialog.weui-confirm.weui-dialog--visible').fadeIn(100)
+    context.disableAccountButton = false
+  , 500)
+
+customShowConfirmTax = (context)->
+  $('.weui-dialog.weui-confirm.weui-dialog--visible').hide()
+  window.setTimeout(()->
+    $('.weui-dialog.weui-confirm.weui-dialog--visible').fadeIn(100)
+    context.disableTaxButton = false
+  , 500)
+
 Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
 )
@@ -46,7 +69,7 @@ baseUrl = '/api/ufstrust/unimoney/web-unimoney-bill-list?userId=' + userId
 sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId
 
 Vue.http.interceptors.push((request, next)->
-
+  request.url = request.getUrl() + "&v=" + new Date().getTime()
   next((response)->
 
     if response.body.code isnt undefined
@@ -108,8 +131,8 @@ bdVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           if this.isShowRadio
             $('#quarter-picker-tax').val($('#quarter-picker').val())
           this.isShowloading = false
@@ -118,14 +141,10 @@ bdVm = new Vue(
       )
     quarterChange : ()->
       yearQuarter = $('#quarter-picker').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker').val('請選擇')
       this.dataList = []
@@ -140,8 +159,8 @@ bdVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           if this.isShowRadio
             $('#quarter-picker-tax').val($('#quarter-picker').val())
           this.isShowloading = false
@@ -159,21 +178,17 @@ bdVm = new Vue(
         if tmpMonth isnt "請選擇"
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"))
       if year is 0 and month is 0
-        return
+        this.dataList = this.originList
       if year isnt 0 and month is 0
         this.dataList = getWithYear(this.originList, year)
       if year isnt 0 and month isnt 0
         this.dataList = getWithYearAndMonth(this.originList, year, month)
     quarterChangeTax : ()->
       yearQuarter = $('#quarter-picker-tax').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker').val('請選擇')
       this.dataList = []
@@ -188,8 +203,8 @@ bdVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-tax').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-tax').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           $('#quarter-picker').val($('#quarter-picker-tax').val())
           this.isShowloading = false
         (error)->
@@ -197,9 +212,16 @@ bdVm = new Vue(
       )
     exportList : ()->
       _self = this
-      yearMonth = $('#month-picker').val()
-      dateRange = '所有'
 
+      yearQuarter = $('#quarter-picker').val()
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      tyear = tmpYear.substring(0, tmpYear.indexOf "年" )
+      tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+
+      dateRange = tyear + '年' + '第' + tquarter + "季度"
+
+      yearMonth = $('#month-picker').val()
       year = 0
       month = 0
       if yearMonth isnt "請選擇"
@@ -209,19 +231,9 @@ bdVm = new Vue(
         dateRange = year + '年'
         if tmpMonth isnt "請選擇"
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"))
+          month = if month.length is 1 then '0' + month else month
           dateRange = year + '年' + month + '月'
-
       title = dateRange + '優利金對賬清單將傳送至以下電子信箱：' + '<br/>'
-
-      yearQuarter = $('#quarter-picker').val()
-      tyear = 0
-      tquarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        tyear = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       if agentVm.email isnt ''
         title += agentVm.email
@@ -230,19 +242,19 @@ bdVm = new Vue(
           text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu'
           onOK: () ->
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill'
-
             if month isnt 0 and year isnt 0
-              month = if month.length is 1 then '0' + month else month
-              url = url + '&redeemMonth=' + year + '年' + month + '月'
-
+              url = url + '&redeemMonth=' + year + '-' + month
+            if month is 0 and year isnt 0
+              url = url + '&redeemMonth=' + year + '-all'
             _self.disableAccountButton = true
             _self.sendEmail(url, (response, vm)->
-              vm.disableAccountButton = false
+              vm.disableAccountButton = true
             , (vm)->
-              vm.disableAccountButton = false
+              vm.disableAccountButton = true
             )
           onCancel: ()->
         )
+        customShowConfirmAccount(agentVm)
         return
 
       this.disableAccountButton = true
@@ -250,29 +262,30 @@ bdVm = new Vue(
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId
       this.$http.get(emailUrl).then(
         (response)->
-          this.disableAccountButton = false
-          title += response.data.email
+          # this.disableAccountButton = false
+          title += response.data.sendEmail
 
           $.confirm(
             title: title
             text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu'
             onOK: () ->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
               url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill'
-
               if month isnt 0 and year isnt 0
-                month = if month.length is 1 then '0' + month else month
-                url = url + '&redeemMonth=' + year + '年' + month + '月'
+                url = url + '&redeemMonth=' + year + '-' + month
+              if month is 0 and year isnt 0
+                url = url + '&redeemMonth=' + year + '-all'
 
               _self.disableAccountButton = true
               _self.sendEmail(url, (response, vm)->
-                vm.disableAccountButton = false
+                vm.disableAccountButton = true
               , (vm)->
-                vm.disableAccountButton = false
+                vm.disableAccountButton = true
               )
             onCancel: ()->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
           )
+          customShowConfirmAccount(this)
         (error)->
           this.disableAccountButton = false
           console.log error
@@ -280,20 +293,14 @@ bdVm = new Vue(
     exportTaxList : ()->
       _self = this
       yearQuarter = $('#quarter-picker-tax').val()
-      dateRange = '所有'
 
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        dateRange = year + '年'
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
-          dateRange = year + '年' + quarter + '季度'
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      dateRange = year + '年' + '第' + quarter + '季度'
 
-      title = dateRange + '優利金補稅清單將傳送至以下電子信箱：' + '<br/>'
+      title = dateRange + '優利金搭贈清單將傳送至以下電子信箱：' + '<br/>'
 
       if agentVm.email isnt ''
         title += agentVm.email
@@ -304,12 +311,13 @@ bdVm = new Vue(
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice'
             _self.disableTaxButton = true
             _self.sendEmail(url, (response, vm)->
-              vm.disableTaxButton = false
+              vm.disableTaxButton = true
             , (vm)->
-              vm.disableTaxButton = false
+              vm.disableTaxButton = true
             )
           onCancel: ()->
         )
+        customShowConfirmTax(agentVm)
         return
 
       this.disableTaxButton = true
@@ -317,24 +325,25 @@ bdVm = new Vue(
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId
       this.$http.get(emailUrl).then(
         (response)->
-          this.disableTaxButton = false
-          title += response.data.email
+          # this.disableTaxButton = false
+          title += response.data.sendEmail
 
           $.confirm(
             title: title
             text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu'
             onOK: () ->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
               url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice'
               _self.disableTaxButton = true
               _self.sendEmail(url, (response, vm)->
-                vm.disableTaxButton = false
+                vm.disableTaxButton = true
               , (vm)->
-                vm.disableTaxButton = false
+                vm.disableTaxButton = true
               )
             onCancel: ()->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
           )
+          customShowConfirmTax(this)
         (error)->
           this.disableTaxButton = false
           console.log error
@@ -357,14 +366,16 @@ bdVm = new Vue(
   computed :
     accountText : ()->
       if this.disableAccountButton
-        return '處理中..'
+        # return '處理中..'
+        return '導出對賬清單至電子郵箱'
       else
         return '導出對賬清單至電子郵箱'
     taxText : ()->
       if this.disableTaxButton
-        return '處理中..'
+        # return '處理中..'
+        return '導出搭贈清單至電子郵箱'
       else
-        return '導出補稅清單至電子郵箱'
+        return '導出搭贈清單至電子郵箱'
     isAccountList : ()->
       isAccountList = if this.whichList is 'accountList' then true else false
       return isAccountList
@@ -398,7 +409,8 @@ byDealerVm = new Vue(
     disableAccountButton : false
     disableTaxButton : false
     whichList : 'accountList'
-    isShowPicker : true
+    isShowPicker : false
+    dealerData : []
   methods :
     initData : ()->
       this.isShowRadio = false
@@ -412,7 +424,7 @@ byDealerVm = new Vue(
 
       this.loadDealer(year, quarter, (year, quarter, _self)->
         _self.isShowloading = true
-        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val()
+        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(_self.dealerData, $('#productor-picker').val())
         _self.$http.get(url).then(
           (response)->
             this.isShowRadio = ShowTax(response.data.items, this.taxList)
@@ -420,8 +432,8 @@ byDealerVm = new Vue(
             this.originList = response.data.items.concat([])
             this.total.count = response.data.total.totalCount
             this.total.sum = response.data.total.totalUnimoney
-            if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-              $('#quarter-picker-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+            # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+            #   $('#quarter-picker-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
             if this.isShowRadio
               $('#quarter-picker-tax-by-dealer').val($('#quarter-picker-by-dealer').val())
             this.isShowloading = false
@@ -438,18 +450,16 @@ byDealerVm = new Vue(
       #   year = tmpYear.substring(0, tmpYear.indexOf "年" )
       #   if tmpQuarter isnt "全部"
       #     quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
-      this.isShowPicker = true
       dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1'
       this.$http.get(dealerUrl).then(
         (response)->
-          values = []
-          for key of response.data
-            values = response.data[key]
           dealers = []
-          if values.length > 0
-            values.map((item)->
-              dealers.push(item.name)
-            )
+          this.dealerData = response.data
+          response.data.map((item)->
+            for key of item
+              dealers.push item[key].name
+          )
+          if dealers.length > 0
             $('#productor-picker').val(dealers[0])
             $("#productor-picker").productorPicker(
               title : ""
@@ -462,6 +472,7 @@ byDealerVm = new Vue(
               changeEvent : this.prodctorChangeTax
               options : dealers
             )
+            this.isShowPicker = true
             callback(year, quarter, this)
           else
             this.isShowPicker = false
@@ -470,22 +481,18 @@ byDealerVm = new Vue(
       )
     quarterChange : ()->
       yearQuarter = $('#quarter-picker-by-dealer').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker-by-dealer').val('請選擇')
       this.dataList = []
       this.taxList = []
-      this.isShowloading = true
 
       this.loadDealer(year, quarter, (year, quarter, _self)->
-        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val()
+        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(_self.dealerData, $('#productor-picker').val())
+        _self.isShowloading = true
         _self.$http.get(url).then(
           (response)->
             this.isShowRadio = ShowTax(response.data.items, this.taxList)
@@ -493,8 +500,8 @@ byDealerVm = new Vue(
             this.originList = response.data.items.concat([])
             this.total.count = response.data.total.totalCount
             this.total.sum = response.data.total.totalUnimoney
-            if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-              $('#quarter-picker-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+            # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+            #   $('#quarter-picker-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
             if this.isShowRadio
               $('#quarter-picker-tax-by-dealer').val($('#quarter-picker-by-dealer').val())
             this.isShowloading = false
@@ -504,21 +511,17 @@ byDealerVm = new Vue(
       )
     prodctorChange : ()->
       yearQuarter = $('#quarter-picker-by-dealer').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker-by-dealer').val('請選擇')
       this.dataList = []
       this.taxList = []
       this.isShowloading = true
 
-      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val()
+      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(this.dealerData, $('#productor-picker').val())
       this.$http.get(url).then(
         (response)->
           this.isShowRadio = ShowTax(response.data.items, this.taxList)
@@ -526,8 +529,8 @@ byDealerVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           if this.isShowRadio
             $('#quarter-picker-tax-by-dealer').val($('#quarter-picker-by-dealer').val())
             $("#productor-picker-tax").val($("#productor-picker").val())
@@ -546,29 +549,25 @@ byDealerVm = new Vue(
         if tmpMonth isnt "請選擇"
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"))
       if year is 0 and month is 0
-        return
+        this.dataList = this.originList
       if year isnt 0 and month is 0
         this.dataList = getWithYear(this.originList, year)
       if year isnt 0 and month isnt 0
         this.dataList = getWithYearAndMonth(this.originList, year, month)
     quarterChangeTax : ()->
       yearQuarter = $('#quarter-picker-tax-by-dealer').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker-by-dealer').val('請選擇')
       this.dataList = []
       this.taxList = []
-      this.isShowloading = true
 
       this.loadDealer(year, quarter, (year, quarter, _self)->
-        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker-tax').val()
+        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(_self.dealerData, $('#productor-picker-tax').val())
+        _self.isShowloading = true
         _self.$http.get(url).then(
           (response)->
             ShowTax(response.data.items, this.taxList)
@@ -576,8 +575,8 @@ byDealerVm = new Vue(
             this.originList = response.data.items.concat([])
             this.total.count = response.data.total.totalCount
             this.total.sum = response.data.total.totalUnimoney
-            if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-              $('#quarter-picker-tax-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+            # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+            #   $('#quarter-picker-tax-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
             $('#quarter-picker-by-dealer').val($('#quarter-picker-tax-by-dealer').val())
             this.isShowloading = false
           (error)->
@@ -586,21 +585,17 @@ byDealerVm = new Vue(
       )
     prodctorChangeTax : ()->
       yearQuarter = $('#quarter-picker-tax-by-dealer').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker-by-dealer').val('請選擇')
       this.dataList = []
       this.taxList = []
       this.isShowloading = true
 
-      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val()
+      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(this.dealerData, $('#productor-picker').val())
       this.$http.get(url).then(
         (response)->
           ShowTax(response.data.items, this.taxList)
@@ -608,8 +603,8 @@ byDealerVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-tax-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-tax-by-dealer').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           $('#quarter-picker-by-dealer').val($('#quarter-picker-tax-by-dealer').val())
           $("#productor-picker").val($("#productor-picker-tax").val())
           this.isShowloading = false
@@ -618,9 +613,15 @@ byDealerVm = new Vue(
       )
     exportList : ()->
       _self = this
-      yearMonth = $('#month-picker-by-dealer').val()
-      dateRange = '所有'
+      yearQuarter = $('#quarter-picker-by-dealer').val()
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      tyear = tmpYear.substring(0, tmpYear.indexOf "年" )
+      tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
+      dateRange = tyear + '年' + '第' + tquarter + "季度"
+
+      yearMonth = $('#month-picker-by-dealer').val()
       year = 0
       month = 0
       if yearMonth isnt "請選擇"
@@ -630,19 +631,9 @@ byDealerVm = new Vue(
         dateRange = year + '年'
         if tmpMonth isnt "請選擇"
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"))
+          month = if month.length is 1 then '0' + month else month
           dateRange = year + '年' + month + '月'
-
       title = dateRange + '優利金對賬清單將傳送至以下電子信箱：' + '<br/>'
-
-      yearQuarter = $('#quarter-picker-by-dealer').val()
-      tyear = 0
-      tquarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        tyear = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       if agentVm.email isnt ''
         title += agentVm.email
@@ -651,19 +642,20 @@ byDealerVm = new Vue(
           text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu'
           onOK: () ->
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill'
-
             if month isnt 0 and year isnt 0
-              month = if month.length is 1 then '0' + month else month
-              url = url + '&redeemMonth=' + year + '年' + month + '月'
+              url = url + '&redeemMonth=' + year + '-' + month
+            if month is 0 and year isnt 0
+              url = url + '&redeemMonth=' + year + '-all'
 
             _self.disableAccountButton = true
             _self.sendEmail(url, (response, vm)->
-              vm.disableAccountButton = false
+              vm.disableAccountButton = true
             , (vm)->
-              vm.disableAccountButton = false
+              vm.disableAccountButton = true
             )
           onCancel: ()->
         )
+        customShowConfirmAccount(agentVm)
         return
 
       this.disableAccountButton = true
@@ -671,29 +663,30 @@ byDealerVm = new Vue(
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId
       this.$http.get(emailUrl).then(
         (response)->
-          this.disableAccountButton = false
-          title += response.data.email
+          # this.disableAccountButton = false
+          title += response.data.sendEmail
 
           $.confirm(
             title: title
             text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu'
             onOK: () ->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
               url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill'
-
               if month isnt 0 and year isnt 0
-                month = if month.length is 1 then '0' + month else month
-                url = url + '&redeemMonth=' + year + '年' + month + '月'
+                url = url + '&redeemMonth=' + year + '-' + month
+              if month is 0 and year isnt 0
+                url = url + '&redeemMonth=' + year + '-all'
 
               _self.disableAccountButton = true
               _self.sendEmail(url, (response, vm)->
-                vm.disableAccountButton = false
+                vm.disableAccountButton = true
               , (vm)->
-                vm.disableAccountButton = false
+                vm.disableAccountButton = true
               )
             onCancel: ()->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
           )
+          customShowConfirmAccount(this)
         (error)->
           this.disableAccountButton = false
           console.log error
@@ -701,20 +694,14 @@ byDealerVm = new Vue(
     exportTaxList : ()->
       _self = this
       yearQuarter = $('#quarter-picker-tax-by-dealer').val()
-      dateRange = '所有'
 
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        dateRange = year + '年'
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
-          dateRange = year + '年' + quarter + '季度'
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      dateRange = year + '年' + '第' + quarter + '季度'
 
-      title = dateRange + '優利金補稅清單將傳送至以下電子信箱：' + '<br/>'
+      title = dateRange + '優利金搭贈清單將傳送至以下電子信箱：' + '<br/>'
 
       if agentVm.email isnt ''
         title += agentVm.email
@@ -725,12 +712,13 @@ byDealerVm = new Vue(
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice'
             _self.disableTaxButton = true
             _self.sendEmail(url, (response, vm)->
-              vm.disableTaxButton = false
+              vm.disableTaxButton = true
             , (vm)->
-              vm.disableTaxButton = false
+              vm.disableTaxButton = true
             )
           onCancel: ()->
         )
+        customShowConfirmTax(agentVm)
         return
 
       this.disableTaxButton = true
@@ -738,24 +726,25 @@ byDealerVm = new Vue(
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId
       this.$http.get(emailUrl).then(
         (response)->
-          this.disableTaxButton = false
-          title += response.data.email
+          # this.disableTaxButton = false
+          title += response.data.sendEmail
 
           $.confirm(
             title: title
             text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu'
             onOK: () ->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
               url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice'
               _self.disableTaxButton = true
               _self.sendEmail(url, (response, vm)->
-                vm.disableTaxButton = false
+                vm.disableTaxButton = true
               , (vm)->
-                vm.disableTaxButton = false
+                vm.disableTaxButton = true
               )
               onCancel: ()->
-              agentVm.email = response.data.email
+              agentVm.email = response.data.sendEmail
           )
+          customShowConfirmTax(this)
         (error)->
           this.disableTaxButton = false
           console.log error
@@ -778,14 +767,16 @@ byDealerVm = new Vue(
   computed :
     accountText : ()->
       if this.disableAccountButton
-        return '處理中..'
+        # return '處理中..'
+        return '導出對賬清單至電子郵箱'
       else
         return '導出對賬清單至電子郵箱'
     taxText : ()->
       if this.disableTaxButton
-        return '處理中..'
+        # return '處理中..'
+        return '導出搭贈清單至電子郵箱'
       else
-        return '導出補稅清單至電子郵箱'
+        return '導出搭贈清單至電子郵箱'
     isAccountList : ()->
       isAccountList = if this.whichList is 'accountList' then true else false
       return isAccountList
@@ -820,7 +811,7 @@ agentVm = new Vue(
 
 bdVm.initData()
 
-$("#quarter-picker").quarterPicker(
+$("#quarter-picker").quarterPickerNoAll(
   title: ""
   changeEvent : bdVm.quarterChange
 )
@@ -830,12 +821,12 @@ $("#month-picker").monthPicker(
   changeEvent : bdVm.monthChange
 )
 
-$("#quarter-picker-tax").quarterPicker(
+$("#quarter-picker-tax").quarterPickerNoAll(
   title: ""
   changeEvent : bdVm.quarterChangeTax
 )
 
-$("#quarter-picker-by-dealer").quarterPicker(
+$("#quarter-picker-by-dealer").quarterPickerNoAll(
   title: ""
   changeEvent : byDealerVm.quarterChange
 )
@@ -845,7 +836,7 @@ $("#month-picker-by-dealer").monthPicker(
   changeEvent : byDealerVm.monthChange
 )
 
-$("#quarter-picker-tax-by-dealer").quarterPicker(
+$("#quarter-picker-tax-by-dealer").quarterPickerNoAll(
   title: ""
   changeEvent : byDealerVm.quarterChangeTax
 )

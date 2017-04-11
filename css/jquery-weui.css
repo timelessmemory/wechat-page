@@ -71,24 +71,24 @@ label > * {
   pointer-events: none;
 }
 html {
-  font-size: 20px;
+  font-size: 52.5% !important;
 }
 body {
   font-size: 16px;
 }
-@media only screen and (min-width: 400px) {
+@media only screen and (min-width: 374px) {
   html {
-    font-size: 21.33333333px !important;
+    font-size: 60.5% !important;
   }
 }
 @media only screen and (min-width: 414px) {
   html {
-    font-size: 22.08px !important;
+    font-size: 62.5% !important;
   }
 }
 @media only screen and (min-width: 480px) {
   html {
-    font-size: 25.6px !important;
+    font-size: 92.5% !important;
   }
 }
 .weui_navbar {
@@ -632,8 +632,8 @@ body {
   -webkit-transition-duration: .2s;
           transition-duration: .2s;
   opacity: 0;
-  -webkit-transform: scale(0.9) translate(-50%, -50%);
-          transform: scale(0.9) translate(-50%, -50%);
+  -webkit-transform: scale(1) translate(-50%, -50%);
+          transform: scale(1) translate(-50%, -50%);
   -webkit-transform-origin: 0 0;
           transform-origin: 0 0;
   visibility: hidden;

@@ -6,9 +6,10 @@ Vue.filter('to-currency', (value) ->
 
 userId = util.queryMap.userId if util.queryMap?.userId
 baseUrl = '/api/ufstrust/agent/web-assessment-list?userId=' + userId
+isAllowSearchButton = false
 
 Vue.http.interceptors.push((request, next)->
-
+  request.url = request.getUrl() + "&v=" + new Date().getTime()
   next((response)->
 
     if response.body.code isnt undefined
@@ -40,7 +41,7 @@ dmVM = new Vue(
     dataList : []
     isShowloading : false
     distributorName : ''
-    isAllCheck : false
+    isAllCheck : true
   methods :
     initData : ()->
       year = new Date().getFullYear()
@@ -52,14 +53,24 @@ dmVM = new Vue(
       url = baseUrl + '&year=' + year + '&quarter=' + quarter
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
+          this.dataList = response.data.items
           if response.data.type is 'target'
             this.isAllCheck = false
+            if response.data.items.length is 0 and response.data.type is 'target'
+              $.modal(
+                title: ""
+                text: "當前季度目標尚未全部核可"
+                buttons: [
+                  {
+                    text: "確認"
+                  }
+                ]
+              )
           else
             this.isAllCheck = true
-          this.dataList = response.data.items
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
-          this.isShowloading = false
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
         (error)->
           console.log error
       )
@@ -76,20 +87,32 @@ dmVM = new Vue(
       url = baseUrl + '&year=' + year + '&quarter=' + quarter
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          $('#status-picker').val '全部'
+          this.dataList = response.data.items
+          this.isShowloading = false
           if response.data.type is 'target'
             this.isAllCheck = false
+            if response.data.items.length is 0 and response.data.type is 'target'
+              $.modal(
+                title: ""
+                text: "當前季度目標尚未全部核可"
+                buttons: [
+                  {
+                    text: "確認"
+                  }
+                ]
+              )
           else
             this.isAllCheck = true
-          this.dataList = response.data.items
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
-          $('#status-picker').val '全部'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
         (error)->
           console.log error
       )
-    search : ()->
+    commonSearch : ()->
       yearQuarter = $('#quarter-picker').val()
       year = 0
       quarter = 0
@@ -105,20 +128,44 @@ dmVM = new Vue(
         url += '&targetStatus=' + status
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
+          this.dataList = response.data.items
           if response.data.type is 'target'
             this.isAllCheck = false
+            if response.data.items.length is 0 and response.data.type is 'target'
+              $.modal(
+                title: ""
+                text: "當前季度目標尚未全部核可"
+                buttons: [
+                  {
+                    text: "確認"
+                  }
+                ]
+              )
           else
             this.isAllCheck = true
-          this.dataList = response.data.items
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
         (error)->
           console.log error
       )
     statusChange : ()->
-      this.search()
+      this.commonSearch()
+    search : ()->
+      isAllowSearchButton = true
+      this.commonSearch()
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.commonSearch()
+    clear : (e)->
+      $input = $(e.target).parents(".weui-search-bar").find(".weui-search-bar__input")
+      if $input.val()
+        $input.val("").focus()
+      this.distributorName = ''
   computed :
     total : ()->
       count = this.dataList.length
@@ -136,7 +183,7 @@ dmVM = new Vue(
         count : count
         target : target
         actual : actual
-        getRate : (totalRate * 100 / count).toFixed(2) + '%'
+        getRate : (totalRate * 100 / count).toFixed(1) + '%'
       return result
 )
 

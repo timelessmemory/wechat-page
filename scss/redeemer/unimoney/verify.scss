@@ -1,45 +1,48 @@
 .unimoney-verify-account {
 
   .table-border-bottom {
-    border-bottom: 1px solid #c8c9ca;
-    margin: 0 16px;
+    border-bottom: 1px solid $ufs-orange-theme-color;
+    margin: 0 1.6rem;
   }
 
   .table-border-top {
-    border-top: 1px solid #c8c9ca;
+    border-top: 1px solid $ufs-orange-theme-color;
   }
 
   .table-border-left {
-    border-left: 1px solid #c8c9ca;
+    border-left: 1px solid $ufs-orange-theme-color;
   }
 
   .table-border-right {
-    border-right: 1px solid #c8c9ca;
+    border-right: 1px solid $ufs-orange-theme-color;
     text-align: center;
-    height: 35px;
-    line-height: 35px;
+    height: 3.5rem;
+    line-height: 3.5rem;
   }
 
   .table-title {
-    height: 38px;
-    line-height: 38px;
-    font-size: 15px;
+    height: 3.8rem;
+    line-height: 3.8rem;
+    font-size: 1.5rem;
+    background-color: $ufs-orange-theme-color;
+    color: white;
   }
 
   .table-item {
-    font-size: 15px;
+    font-size: 1.5rem;
   }
 
   a.weui-navbar__item.weui-bar__item--on {
-    border-bottom: solid 2px black;
+    border-bottom: solid 0.2rem $ufs-orange-theme-color;
+    color: $ufs-orange-theme-color;
   }
 
   .weui-navbar__item {
-    padding: 6px 0;
+    padding: 0.6rem 0;
   }
 
   .weui-navbar + .weui-tab__bd {
-    padding-top: 38px;
+    padding-top: 3.8rem;
     background-color: #FAFAFA;
   }
 
@@ -53,12 +56,14 @@
 
   .weui-btn {
     line-height: 1.55;
-    font-size: 12px;
+    font-size: 1.2rem;
   }
 
   .bottom-button {
     line-height: 3;
-    font-size: 17px;
+    font-size: 1.8rem;
+    background-color: $ufs-orange-theme-color;
+    color: #fff;
   }
 
   .export-list {
@@ -67,24 +72,36 @@
     width: 93%;
     margin: 0px 3.4%;
     background-color: #fff;
+    .weui-btn:after {
+      border: 1px solid $ufs-orange-theme-color;
+    }
+
+    .weui-btn_disabled.weui-btn_default {
+      color: white;
+      background-color: #bdbdbd;
+    }
+
+    .weui-btn_disabled.weui-btn_default:after {
+      border: 1px solid white;
+    }
   }
 
   .total-desc {
-    font-size: 16px;
+    font-size: 1.6rem;
     margin-left:1em;
     color:grey;
 
     span {
       color: black;
       font-weight: bold;
-      font-size: 17px;
+      font-style: italic;
     }
   }
 
   .remark {
-    margin: 5px 4%;
+    margin: 0.5rem 4%;
     color: grey;
-    font-size: 13px;
+    font-size: 1.4rem;
     padding-bottom: 1em;
   }
 
@@ -100,7 +117,7 @@
 .weui-confirm .weui-dialog__bd {
   color: #999;
   text-align: left;
-  font-size: 13px;
+  font-size: 1.3rem;
   padding-left: 1em;
 }
 
@@ -109,13 +126,29 @@
 }
 
 .weui-btn:after {
-  border: 1px solid black;
+  border: 1px solid $ufs-orange-theme-color;
 }
 
 .weui-dialog {
-  max-width: 331px;
+  max-width: 33.1rem;
 }
 
 .table-border-top, .table-item {
   background-color: #fff;
+}
+
+.weui-search-bar__form {
+  background-color: #fafafa;
+}
+
+.weui-search-bar:after {
+  border-bottom: 0px solid #d7d6dc;
+}
+
+.weui-btn_default:not(.weui-btn_disabled):active {
+  background-color: #FFC37B;
+}
+
+.weui-search-bar__box .weui-search-bar__input {
+  font-size: 1.4rem;
 }

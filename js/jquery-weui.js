@@ -3221,6 +3221,7 @@ if (typeof define === 'function' && define.amd) {
   $.modal = function(params, onOpen) {
     params = $.extend({}, defaults, params);
 
+    var addClassName = params.buttons.length == 2 ? "weui-confirm" : "";
 
     var buttons = params.buttons;
 
@@ -3228,7 +3229,7 @@ if (typeof define === 'function' && define.amd) {
       return '<a href="javascript:;" class="weui-dialog__btn ' + (d.className || "") + '">' + d.text + '</a>';
     }).join("");
 
-    var tpl = '<div class="weui-dialog">' +
+    var tpl = '<div class="weui-dialog ' + addClassName + '">' +
                 '<div class="weui-dialog__hd"><strong class="weui-dialog__title">' + params.title + '</strong></div>' +
                 ( params.text ? '<div class="weui-dialog__bd">'+params.text+'</div>' : '')+
                 '<div class="weui-dialog__ft">' + buttonsHtml + '</div>' +
@@ -3810,6 +3811,7 @@ if (typeof define === 'function' && define.amd) {
 
   $(document).on("click touchstart", ".weui-search-bar__label", function(e) {
     $(e.target).parents(".weui-search-bar").addClass("weui-search-bar_focusing").find('input').focus();
+    e.preventDefault();
   })
 
   .on("blur", ".weui-search-bar__input", function(e) {
@@ -3821,7 +3823,8 @@ if (typeof define === 'function' && define.amd) {
     var $input = $(e.target).parents(".weui-search-bar").removeClass("weui-search-bar_focusing").find(".weui-search-bar__input").val("").blur();
   })
   .on("click", ".weui-icon-clear", function(e) {
-    var $input = $(e.target).parents(".weui-search-bar").find(".weui-search-bar__input").val("").focus();
+    var $input = $(e.target).parents(".weui-search-bar").find(".weui-search-bar__input")
+    if($input.val()) $input.val("").focus();
   });
 
 }($);
@@ -3955,7 +3958,7 @@ Device/OS Detection
           title: '请选择',
           toolbarTemplate: '<div class="toolbar">\
           <div class="toolbar-inner">\
-          <a href="javascript:;" class="cancel-picker">取消</a>\
+          <a href="javascript:;" class="cancel-picker">关闭</a>\
           <a href="javascript:;" class="picker-button close-picker">{{closeText}}</a>\
           <h1 class="title">{{title}}</h1>\
           </div>\

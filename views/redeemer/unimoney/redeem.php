@@ -33,7 +33,7 @@
           <form class="weui-search-bar__form" v-on:submit.prevent="search()">
             <div class="weui-search-bar__box">
               <i class="weui-icon-search"></i>
-              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" placeholder="盘商名称">
+              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" @blur="blurSearch()" placeholder="盘商名称">
               <a href="javascript:" class="weui-icon-clear" id="searchClear" @click="distributorName = ''"></a>
             </div>
             <label class="weui-search-bar__label" id="searchText">
@@ -47,30 +47,36 @@
             <input type="text" id='quarter-picker' class="picker-custom"/>
         </div>
 
-        <template v-if="toBeCheckedData.length > 0">
-            <div class="total-desc">
-            總家數:<span>{{total.count}}</span>家
-            <br/>
-            總金額:<span>${{total.unimoney | to-currency}}</span>
+        <template v-cloak v-if="toBeCheckedData.length > 0 && !isShowloading">
+            <div class="total-desc abstract-box">
+                <div class="abstract-title">
+                    優利金核銷摘要
+                </div>
+                <div class="top-left">總家數&nbsp;:<span>&nbsp;{{total.count}}</span>&nbsp;家</div>
+                <div class="bottom-left">總金額&nbsp;:&nbsp;<span>${{total.unimoney | to-currency}}</span></div>
             </div>
         </template>
 
-        <div class="weui-cells" style="margin-top: 0.2rem;margin-bottom: 2rem;">
-          <div class="weui-cell" v-for="item in toBeCheckedData">
-            <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/medal.png"></div>
-            <div class="weui-cell__bd">
+        <div class="weui-cells" style="margin-top: 0.2rem;margin-bottom: 3rem;">
+          <div class="weui-cell" v-for="item in toBeCheckedData" v-cloak v-show="!isShowloading">
+            <div class="weui-cell__hd img-top"><img style="width:10.1rem;height:6.06rem;" src="/webapp/build/ufstrust/images/trust_unimoney_card.png"></div>
+            <div class="weui-cell__bd" style="margin-left: 0.5em;">
               <p>優利金${{item.couponDenomination | to-currency}}</p>
               <div class="row-cell">
+                  <div class="col-cell">&nbsp;</div>
+                  <div class="col-cell">&nbsp;</div>
+              </div>
+              <div class="row-cell">
                   <div class="col-cell">盤商名稱</div>
-                  <div class="col-cell">{{item.distributor.name}}</div>
+                  <div class="col-cell weui-flex__item">{{item.distributor.name}}</div>
               </div>
               <div class="row-cell">
                   <div class="col-cell">申請核可日期</div>
-                  <div class="col-cell">{{item.createdAt}}</div>
+                  <div class="col-cell weui-flex__item">{{item.createdAt}}</div>
               </div>
               <div class="row-cell">
                   <div class="col-cell">有效日期</div>
-                  <div class="col-cell">{{item.expireAt.split(" ")[0]}}</div>
+                  <div class="col-cell weui-flex__item">{{item.expireAt.split(" ")[0]}}</div>
               </div>
             </div>
             <div class="weui-cell__ft">
@@ -85,14 +91,14 @@
         </div>
 
         <template v-if="isShowloading">
-            <div class="weui-loadmore">
+            <div class="weui-loadmore load-align">
               <i class="weui-loading"></i>
               <span class="weui-loadmore__tips">正在加載</span>
             </div>
         </template>
 
         <template v-if="toBeCheckedData.length > 0 && isLoadMore">
-            <div class="weui-loadmore">
+            <div class="weui-loadmore" style="position: relative;top: -1.5rem;">
               <i class="weui-loading"></i>
               <span class="weui-loadmore__tips">正在加載</span>
             </div>
@@ -105,7 +111,7 @@
         </template> -->
     </div>
 
-    <div id="tmp" v-if="toBeCheckedData.length > 0 && isShowFoot">
+    <div id="tmp" v-cloak v-if="toBeCheckedData.length > 0 && isShowFoot && !isShowloading">
         <div class="check-all">
             <button class="weui-btn weui-btn_default all-button" :class="{'weui-btn_disabled' : allowCheck()}" :disabled="allowCheck()" @click="checkAll()">全部核可</button>
         </div>
@@ -125,7 +131,7 @@
           <form class="weui-search-bar__form" v-on:submit.prevent="search()">
             <div class="weui-search-bar__box">
               <i class="weui-icon-search"></i>
-              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" placeholder="盘商名称">
+              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" @blur="blurSearch()" placeholder="盘商名称">
               <a href="javascript:" class="weui-icon-clear" id="searchClear" @click="distributorName = ''"></a>
             </div>
             <label class="weui-search-bar__label" id="searchText">
@@ -139,30 +145,36 @@
             <input type="text" id='quarter-picker-no-all' class="picker-custom"/>
         </div>
 
-        <template v-if="haveBeenCheckedData.length > 0">
-            <div class="total-desc">
-            總家數:<span>{{total.count}}</span>家
-            <br/>
-            總金額:<span>${{total.sum | to-currency}}</span>
+        <template v-cloak v-if="haveBeenCheckedData.length > 0 && !isShowloading">
+            <div class="total-desc abstract-box">
+                <div class="abstract-title">
+                    優利金核銷摘要
+                </div>
+                <div class="top-left">總家數&nbsp;:&nbsp;<span>{{total.count}}</span>&nbsp;家</div>
+                <div class="bottom-left">總金額&nbsp;:&nbsp;<span>${{total.sum | to-currency}}</span></div>
             </div>
         </template>
 
         <div class="weui-cells" style="margin-top: 0.2em;">
-          <div class="weui-cell" v-for="item in haveBeenCheckedData">
-            <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/medal.png"></div>
+          <div class="weui-cell" v-cloak v-for="item in haveBeenCheckedData" v-show="!isShowloading">
+            <div class="weui-cell__hd img-top"><img src="/webapp/build/ufstrust/images/trust_unimoney_card.png"></div>
             <div class="weui-cell__bd">
               <p>優利金${{item.couponDenomination | to-currency}}</p>
               <div class="row-cell">
+                  <div class="col-cell">&nbsp;</div>
+                  <div class="col-cell">&nbsp;</div>
+              </div>
+              <div class="row-cell">
                   <div class="col-cell">盤商名稱</div>
-                  <div class="col-cell">{{item.distributor.name}}</div>
+                  <div class="col-cell-value">{{item.distributor.name}}</div>
               </div>
               <div class="row-cell">
                   <div class="col-cell">申請核可日期</div>
-                  <div class="col-cell">{{item.createdAt}}</div>
+                  <div class="col-cell-value">{{item.createdAt}}</div>
               </div>
               <div class="row-cell">
                   <div class="col-cell">核可日期</div>
-                  <div class="col-cell" :class="{'mark': isMark(item.redeemAt.split(' ')[0])}">{{item.redeemAt.split(" ")[0]}}</div>
+                  <div class="col-cell-value" :class="{'mark': isMark(item.redeemAt.split(' ')[0])}">{{item.redeemAt.split(" ")[0]}}</div>
               </div>
             </div>
           </div>
@@ -201,7 +213,7 @@
           <form class="weui-search-bar__form" v-on:submit.prevent="search()">
             <div class="weui-search-bar__box">
               <i class="weui-icon-search"></i>
-              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" placeholder="盘商名称">
+              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" @blur="blurSearch()" placeholder="盘商名称">
               <a href="javascript:" class="weui-icon-clear" id="searchClear" @click="distributorName = ''"></a>
             </div>
             <label class="weui-search-bar__label" id="searchText">
@@ -215,26 +227,32 @@
             <input type="text" id='quarter-picker-not-exchanged' class="picker-custom"/>
         </div>
 
-        <template v-if="notExchangedData.length > 0">
-            <div class="total-desc">
-            總家數:<span>{{total.count}}</span>家
-            <br/>
-            總金額:<span>${{total.sum | to-currency}}</span>
+        <template v-cloak v-if="notExchangedData.length > 0 && !isShowloading">
+            <div class="total-desc abstract-box">
+                <div class="abstract-title">
+                    優利金核銷摘要
+                </div>
+                <div class="top-left">總家數&nbsp;:&nbsp;<span>{{total.count}}</span>&nbsp;家</div>
+                <div class="bottom-left">總金額&nbsp;:&nbsp;<span>${{total.sum | to-currency}}</span></div>
             </div>
         </template>
 
         <div class="weui-cells" style="margin-top: 0.2em;">
-          <div class="weui-cell" v-for="item in notExchangedData">
-            <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/medal.png"></div>
+          <div class="weui-cell" v-cloak v-for="item in notExchangedData" v-show="!isShowloading">
+            <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/trust_unimoney_card.png"></div>
             <div class="weui-cell__bd">
               <p>優利金${{item.couponDenomination | to-currency}}</p>
               <div class="row-cell">
+                  <div class="col-cell">&nbsp;</div>
+                  <div class="col-cell">&nbsp;</div>
+              </div>
+              <div class="row-cell">
                   <div class="col-cell">盤商名稱</div>
-                  <div class="col-cell">{{item.distributor.name}}</div>
+                  <div class="col-cell-value">{{item.distributor.name}}</div>
               </div>
               <div class="row-cell">
                   <div class="col-cell">有效日期</div>
-                  <div class="col-cell">{{item.expireAt.split(" ")[0]}}</div>
+                  <div class="col-cell-value">{{item.expireAt.split(" ")[0]}}</div>
               </div>
             </div>
           </div>
@@ -273,7 +291,7 @@
           <form class="weui-search-bar__form" v-on:submit.prevent="search()">
             <div class="weui-search-bar__box">
               <i class="weui-icon-search"></i>
-              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" placeholder="盘商名称">
+              <input type="search" class="weui-search-bar__input" id="searchInput" v-model="distributorName" @blur="blurSearch()" placeholder="盘商名称">
               <a href="javascript:" class="weui-icon-clear" id="searchClear" @click="distributorName = ''"></a>
             </div>
             <label class="weui-search-bar__label" id="searchText">
@@ -287,24 +305,30 @@
             <input type="text" id='quarter-picker-expired' class="picker-custom"/>
         </div>
 
-        <div class="total-desc" v-if="expiredData.length > 0">
-        總家數:<span>{{total.count}}</span>家
-        <br/>
-        總金額:<span>${{total.sum | to-currency}}</span>
+        <div class="total-desc abstract-box" v-if="expiredData.length > 0 && !isShowloading" v-cloak>
+            <div class="abstract-title">
+                優利金核銷摘要
+            </div>
+            <div class="top-left">總家數&nbsp;:&nbsp;<span>{{total.count}}</span>&nbsp;家</div>
+            <div class="bottom-left">總金額&nbsp;:&nbsp;<span>${{total.sum | to-currency}}</span></div>
         </div>
 
         <div class="weui-cells" style="margin-top: 0.2em;">
-          <div class="weui-cell" v-for="item in expiredData">
-            <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/medal.png"></div>
+          <div class="weui-cell" v-cloak v-for="item in expiredData" v-show="!isShowloading">
+            <div class="weui-cell__hd"><img src="/webapp/build/ufstrust/images/trust_unimoney_card.png"></div>
             <div class="weui-cell__bd">
               <p>優利金${{item.couponDenomination | to-currency}}</p>
               <div class="row-cell">
+                  <div class="col-cell">&nbsp;</div>
+                  <div class="col-cell">&nbsp;</div>
+              </div>
+              <div class="row-cell">
                   <div class="col-cell">盤商名稱</div>
-                  <div class="col-cell">{{item.distributor.name}}</div>
+                  <div class="col-cell-value">{{item.distributor.name}}</div>
               </div>
               <div class="row-cell">
                   <div class="col-cell">有效日期</div>
-                  <div class="col-cell">{{item.expireAt.split(" ")[0]}}</div>
+                  <div class="col-cell-value">{{item.expireAt.split(" ")[0]}}</div>
               </div>
             </div>
           </div>

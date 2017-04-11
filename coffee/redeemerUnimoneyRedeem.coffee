@@ -12,6 +12,7 @@ switchTap = (currentTarget)->
   if not /^#/.test(href)
     return
   $.showTab($a)
+  $($a.context.hash).find('#searchBar').removeClass("weui-search-bar_focusing")
 
 Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
@@ -23,8 +24,10 @@ checkUrl = '/api/ufstrust/unimoney/redeem-unimoneys?userId=' + userId
 perPage = 10
 page = 1
 loading = false
+isAllowSearchButton = false
 
 Vue.http.interceptors.push((request, next)->
+  request.url = request.getUrl() + "&v=" + new Date().getTime()
 
   next((response)->
 
@@ -108,7 +111,17 @@ tbcVM = new Vue(
       )
     checkAll : ()->
       _self = this
-      url = checkUrl + '&redeemAll=1'
+
+      yearQuarter = $('#quarter-picker').val()
+      year = 0
+      quarter = 0
+      if yearQuarter isnt "全部"
+        tmpYear = yearQuarter.split(' ')[0]
+        tmpQuarter = yearQuarter.split(' ')[1]
+        year = tmpYear.substring(0, tmpYear.indexOf "年" )
+        if tmpQuarter isnt "全部"
+          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      url = checkUrl + '&redeemAll=1' + '&year=' + year + '&quarter=' + quarter
       this.$http.get(url).then( (response)->
         if response.data.successCount > 0
           $.modal(
@@ -151,20 +164,28 @@ tbcVM = new Vue(
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.toBeCheckedData = response.data.items
           this.count = response.data.total.totalCount
           this.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     search : ()->
+      isAllowSearchButton = true
       this.quarterChange()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.quarterChange()
+    loadData: ()->
       this.distributorName = ""
       this.offCount = 0
       this.offSum = 0
@@ -180,6 +201,7 @@ tbcVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       this.$http.get(url).then(
@@ -191,11 +213,7 @@ tbcVM = new Vue(
           #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
     allowCheck: ()->
@@ -215,6 +233,8 @@ tmpVM = new Vue(
   computed:
     toBeCheckedData : ()->
       tbcVM.toBeCheckedData
+    isShowloading : ()->
+      tbcVM.isShowloading
   methods:
     allowCheck : ()->
       tbcVM.allowCheck()
@@ -244,20 +264,28 @@ hbcVM = new Vue(
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.haveBeenCheckedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     search : ()->
+      isAllowSearchButton = true
       this.quarterChange()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.quarterChange()
+    loadData: ()->
       this.distributorName = ""
 
       year = new Date().getFullYear()
@@ -267,6 +295,7 @@ hbcVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       this.$http.get(url).then(
@@ -274,15 +303,11 @@ hbcVM = new Vue(
           this.haveBeenCheckedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
     isMark: (param)->
@@ -320,20 +345,28 @@ necgVM = new Vue(
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.notExchangedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     search : ()->
+      isAllowSearchButton = true
       this.quarterChange()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.quarterChange()
+    loadData: ()->
       this.distributorName = ""
 
       # year = new Date().getFullYear()
@@ -347,6 +380,7 @@ necgVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       this.$http.get(url).then(
@@ -358,11 +392,7 @@ necgVM = new Vue(
           #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
 )
@@ -389,20 +419,28 @@ expVM = new Vue(
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.expiredData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     search : ()->
+      isAllowSearchButton = true
       this.quarterChange()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.quarterChange()
+    loadData: ()->
       this.distributorName = ""
 
       year = new Date().getFullYear()
@@ -412,6 +450,7 @@ expVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
       this.$http.get(url).then(
@@ -419,15 +458,11 @@ expVM = new Vue(
           this.expiredData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
 )
@@ -437,13 +472,17 @@ csVM = new Vue(
   el: "#checkSystem"
   methods:
     loadToBeChecked: (e)->
-      tbcVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      tbcVM.loadData()
     loadHaveBeenChecked: (e)->
-      hbcVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      hbcVM.loadData()
     loadNotExchanged: (e)->
-      necgVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      necgVM.loadData()
     loadExpired: (e)->
-      expVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      expVM.loadData()
 )
 
 tbcVM.loadData()
@@ -467,13 +506,16 @@ $("#toBeChecked").pullToRefresh().on("pull-to-refresh", ()->
   url = baseUrl + '&type=' + tbcVM.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
   if tbcVM.distributorName isnt ''
     url = url + '&searchKey=' + tbcVM.distributorName
+  tbcVM.isLoadMore = false
+  tbcVM.isShowloading = true
   tbcVM.$http.get(url).then(
     (response)->
+      tbcVM.isShowloading = false
       tbcVM.toBeCheckedData = response.data.items
       tbcVM.count = response.data.total.totalCount
       tbcVM.sum = response.data.total.totalUnimoney
-      if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       tbcVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -494,13 +536,16 @@ $("#haveBeenChecked").pullToRefresh().on("pull-to-refresh", ()->
   url = baseUrl + '&type=' + hbcVM.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
   if hbcVM.distributorName isnt ''
     url = url + '&searchKey=' + hbcVM.distributorName
+  hbcVM.isLoadMore = false
+  hbcVM.isShowloading = true
   hbcVM.$http.get(url).then(
     (response)->
+      hbcVM.isShowloading = false
       hbcVM.haveBeenCheckedData = response.data.items
       hbcVM.total.count = response.data.total.totalCount
       hbcVM.total.sum = response.data.total.totalUnimoney
-      if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       hbcVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -525,13 +570,16 @@ $("#notExchanged").pullToRefresh().on("pull-to-refresh", ()->
   url = baseUrl + '&type=' + necgVM.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
   if necgVM.distributorName isnt ''
     url = url + '&searchKey=' + necgVM.distributorName
+  necgVM.isLoadMore = false
+  necgVM.isShowloading = true
   necgVM.$http.get(url).then(
     (response)->
+      necgVM.isShowloading = false
       necgVM.notExchangedData = response.data.items
       necgVM.total.count = response.data.total.totalCount
       necgVM.total.sum = response.data.total.totalUnimoney
-      if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       necgVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -552,13 +600,16 @@ $("#expired").pullToRefresh().on("pull-to-refresh", ()->
   url = baseUrl + '&type=' + expVM.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage
   if expVM.distributorName isnt ''
     url = url + '&searchKey=' + expVM.distributorName
+  expVM.isLoadMore = false
+  expVM.isShowloading = true
   expVM.$http.get(url).then(
     (response)->
+      expVM.isShowloading = false
       expVM.expiredData = response.data.items
       expVM.total.count = response.data.total.totalCount
       expVM.total.sum = response.data.total.totalUnimoney
-      if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       expVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->

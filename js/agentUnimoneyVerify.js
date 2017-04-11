@@ -1,4 +1,4 @@
-var ShowTax, agentVm, baseUrl, bdVm, byDealerVm, getWithYear, getWithYearAndMonth, sendEmailUrl, switchTap, userId, _ref;
+var ShowTax, agentVm, baseUrl, bdVm, byDealerVm, customShowConfirmAccount, customShowConfirmTax, getDealerId, getWithYear, getWithYearAndMonth, sendEmailUrl, switchTap, userId, _ref;
 
 $("title")[0].innerText = "優利金對賬系統";
 
@@ -53,6 +53,40 @@ getWithYearAndMonth = function(items, year, month) {
   return result;
 };
 
+getDealerId = function(dealerData, name) {
+  var id;
+  id = '';
+  dealerData.map(function(item) {
+    var key, _results;
+    _results = [];
+    for (key in item) {
+      if (item[key].name === name) {
+        _results.push(id = key);
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
+  });
+  return id;
+};
+
+customShowConfirmAccount = function(context) {
+  $('.weui-dialog.weui-confirm.weui-dialog--visible').hide();
+  return window.setTimeout(function() {
+    $('.weui-dialog.weui-confirm.weui-dialog--visible').fadeIn(100);
+    return context.disableAccountButton = false;
+  }, 500);
+};
+
+customShowConfirmTax = function(context) {
+  $('.weui-dialog.weui-confirm.weui-dialog--visible').hide();
+  return window.setTimeout(function() {
+    $('.weui-dialog.weui-confirm.weui-dialog--visible').fadeIn(100);
+    return context.disableTaxButton = false;
+  }, 500);
+};
+
 Vue.filter('to-currency', function(value) {
   return accounting.formatNumber(value);
 });
@@ -66,6 +100,7 @@ baseUrl = '/api/ufstrust/unimoney/web-unimoney-bill-list?userId=' + userId;
 sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId;
 
 Vue.http.interceptors.push(function(request, next) {
+  request.url = request.getUrl() + "&v=" + new Date().getTime();
   return next(function(response) {
     var result;
     if (response.body.code !== void 0) {
@@ -128,9 +163,6 @@ bdVm = new Vue({
         this.originList = response.data.items.concat([]);
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         if (this.isShowRadio) {
           $('#quarter-picker-tax').val($('#quarter-picker').val());
         }
@@ -142,16 +174,10 @@ bdVm = new Vue({
     quarterChange: function() {
       var quarter, tmpQuarter, tmpYear, url, year, yearQuarter;
       yearQuarter = $('#quarter-picker').val();
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
       $('#month-picker').val('請選擇');
       this.dataList = [];
       this.taxList = [];
@@ -163,9 +189,6 @@ bdVm = new Vue({
         this.originList = response.data.items.concat([]);
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         if (this.isShowRadio) {
           $('#quarter-picker-tax').val($('#quarter-picker').val());
         }
@@ -188,7 +211,7 @@ bdVm = new Vue({
         }
       }
       if (year === 0 && month === 0) {
-        return;
+        this.dataList = this.originList;
       }
       if (year !== 0 && month === 0) {
         this.dataList = getWithYear(this.originList, year);
@@ -200,16 +223,10 @@ bdVm = new Vue({
     quarterChangeTax: function() {
       var quarter, tmpQuarter, tmpYear, url, year, yearQuarter;
       yearQuarter = $('#quarter-picker-tax').val();
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
       $('#month-picker').val('請選擇');
       this.dataList = [];
       this.taxList = [];
@@ -221,9 +238,6 @@ bdVm = new Vue({
         this.originList = response.data.items.concat([]);
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker-tax').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         $('#quarter-picker').val($('#quarter-picker-tax').val());
         return this.isShowloading = false;
       }, function(error) {
@@ -233,8 +247,13 @@ bdVm = new Vue({
     exportList: function() {
       var dateRange, emailUrl, month, title, tmpMonth, tmpQuarter, tmpYear, tquarter, tyear, year, yearMonth, yearQuarter, _self;
       _self = this;
+      yearQuarter = $('#quarter-picker').val();
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      tyear = tmpYear.substring(0, tmpYear.indexOf("年"));
+      tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
+      dateRange = tyear + '年' + '第' + tquarter + "季度";
       yearMonth = $('#month-picker').val();
-      dateRange = '所有';
       year = 0;
       month = 0;
       if (yearMonth !== "請選擇") {
@@ -244,21 +263,11 @@ bdVm = new Vue({
         dateRange = year + '年';
         if (tmpMonth !== "請選擇") {
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"));
+          month = month.length === 1 ? '0' + month : month;
           dateRange = year + '年' + month + '月';
         }
       }
       title = dateRange + '優利金對賬清單將傳送至以下電子信箱：' + '<br/>';
-      yearQuarter = $('#quarter-picker').val();
-      tyear = 0;
-      tquarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        tyear = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
       if (agentVm.email !== '') {
         title += agentVm.email;
         $.confirm({
@@ -268,47 +277,52 @@ bdVm = new Vue({
             var url;
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill';
             if (month !== 0 && year !== 0) {
-              month = month.length === 1 ? '0' + month : month;
-              url = url + '&redeemMonth=' + year + '年' + month + '月';
+              url = url + '&redeemMonth=' + year + '-' + month;
+            }
+            if (month === 0 && year !== 0) {
+              url = url + '&redeemMonth=' + year + '-all';
             }
             _self.disableAccountButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             }, function(vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             });
           },
           onCancel: function() {}
         });
+        customShowConfirmAccount(agentVm);
         return;
       }
       this.disableAccountButton = true;
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId;
       return this.$http.get(emailUrl).then(function(response) {
-        this.disableAccountButton = false;
-        title += response.data.email;
-        return $.confirm({
+        title += response.data.sendEmail;
+        $.confirm({
           title: title,
           text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu',
           onOK: function() {
             var url;
-            agentVm.email = response.data.email;
+            agentVm.email = response.data.sendEmail;
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill';
             if (month !== 0 && year !== 0) {
-              month = month.length === 1 ? '0' + month : month;
-              url = url + '&redeemMonth=' + year + '年' + month + '月';
+              url = url + '&redeemMonth=' + year + '-' + month;
+            }
+            if (month === 0 && year !== 0) {
+              url = url + '&redeemMonth=' + year + '-all';
             }
             _self.disableAccountButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             }, function(vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             });
           },
           onCancel: function() {
-            return agentVm.email = response.data.email;
+            return agentVm.email = response.data.sendEmail;
           }
         });
+        return customShowConfirmAccount(this);
       }, function(error) {
         this.disableAccountButton = false;
         return console.log(error);
@@ -318,20 +332,12 @@ bdVm = new Vue({
       var dateRange, emailUrl, quarter, title, tmpQuarter, tmpYear, year, yearQuarter, _self;
       _self = this;
       yearQuarter = $('#quarter-picker-tax').val();
-      dateRange = '所有';
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        dateRange = year + '年';
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-          dateRange = year + '年' + quarter + '季度';
-        }
-      }
-      title = dateRange + '優利金補稅清單將傳送至以下電子信箱：' + '<br/>';
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
+      dateRange = year + '年' + '第' + quarter + '季度';
+      title = dateRange + '優利金搭贈清單將傳送至以下電子信箱：' + '<br/>';
       if (agentVm.email !== '') {
         title += agentVm.email;
         $.confirm({
@@ -342,38 +348,39 @@ bdVm = new Vue({
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice';
             _self.disableTaxButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             }, function(vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             });
           },
           onCancel: function() {}
         });
+        customShowConfirmTax(agentVm);
         return;
       }
       this.disableTaxButton = true;
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId;
       return this.$http.get(emailUrl).then(function(response) {
-        this.disableTaxButton = false;
-        title += response.data.email;
-        return $.confirm({
+        title += response.data.sendEmail;
+        $.confirm({
           title: title,
           text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu',
           onOK: function() {
             var url;
-            agentVm.email = response.data.email;
+            agentVm.email = response.data.sendEmail;
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice';
             _self.disableTaxButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             }, function(vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             });
           },
           onCancel: function() {
-            return agentVm.email = response.data.email;
+            return agentVm.email = response.data.sendEmail;
           }
         });
+        return customShowConfirmTax(this);
       }, function(error) {
         this.disableTaxButton = false;
         return console.log(error);
@@ -401,16 +408,16 @@ bdVm = new Vue({
   computed: {
     accountText: function() {
       if (this.disableAccountButton) {
-        return '處理中..';
+        return '導出對賬清單至電子郵箱';
       } else {
         return '導出對賬清單至電子郵箱';
       }
     },
     taxText: function() {
       if (this.disableTaxButton) {
-        return '處理中..';
+        return '導出搭贈清單至電子郵箱';
       } else {
-        return '導出補稅清單至電子郵箱';
+        return '導出搭贈清單至電子郵箱';
       }
     },
     isAccountList: function() {
@@ -455,7 +462,8 @@ byDealerVm = new Vue({
     disableAccountButton: false,
     disableTaxButton: false,
     whichList: 'accountList',
-    isShowPicker: true
+    isShowPicker: false,
+    dealerData: []
   },
   methods: {
     initData: function() {
@@ -471,16 +479,13 @@ byDealerVm = new Vue({
       return this.loadDealer(year, quarter, function(year, quarter, _self) {
         var url;
         _self.isShowloading = true;
-        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val();
+        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(_self.dealerData, $('#productor-picker').val());
         return _self.$http.get(url).then(function(response) {
           this.isShowRadio = ShowTax(response.data.items, this.taxList);
           this.dataList = response.data.items;
           this.originList = response.data.items.concat([]);
           this.total.count = response.data.total.totalCount;
           this.total.sum = response.data.total.totalUnimoney;
-          if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-            $('#quarter-picker-by-dealer').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-          }
           if (this.isShowRadio) {
             $('#quarter-picker-tax-by-dealer').val($('#quarter-picker-by-dealer').val());
           }
@@ -492,19 +497,20 @@ byDealerVm = new Vue({
     },
     loadDealer: function(year, quarter, callback) {
       var dealerUrl;
-      this.isShowPicker = true;
       dealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId + '&year=' + year + '&quarter=' + quarter + '&getRedeemers=1';
       return this.$http.get(dealerUrl).then(function(response) {
-        var dealers, key, values;
-        values = [];
-        for (key in response.data) {
-          values = response.data[key];
-        }
+        var dealers;
         dealers = [];
-        if (values.length > 0) {
-          values.map(function(item) {
-            return dealers.push(item.name);
-          });
+        this.dealerData = response.data;
+        response.data.map(function(item) {
+          var key, _results;
+          _results = [];
+          for (key in item) {
+            _results.push(dealers.push(item[key].name));
+          }
+          return _results;
+        });
+        if (dealers.length > 0) {
           $('#productor-picker').val(dealers[0]);
           $("#productor-picker").productorPicker({
             title: "",
@@ -517,6 +523,7 @@ byDealerVm = new Vue({
             changeEvent: this.prodctorChangeTax,
             options: dealers
           });
+          this.isShowPicker = true;
           return callback(year, quarter, this);
         } else {
           return this.isShowPicker = false;
@@ -528,32 +535,23 @@ byDealerVm = new Vue({
     quarterChange: function() {
       var quarter, tmpQuarter, tmpYear, year, yearQuarter;
       yearQuarter = $('#quarter-picker-by-dealer').val();
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
       $('#month-picker-by-dealer').val('請選擇');
       this.dataList = [];
       this.taxList = [];
-      this.isShowloading = true;
       return this.loadDealer(year, quarter, function(year, quarter, _self) {
         var url;
-        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val();
+        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(_self.dealerData, $('#productor-picker').val());
+        _self.isShowloading = true;
         return _self.$http.get(url).then(function(response) {
           this.isShowRadio = ShowTax(response.data.items, this.taxList);
           this.dataList = response.data.items;
           this.originList = response.data.items.concat([]);
           this.total.count = response.data.total.totalCount;
           this.total.sum = response.data.total.totalUnimoney;
-          if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-            $('#quarter-picker-by-dealer').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-          }
           if (this.isShowRadio) {
             $('#quarter-picker-tax-by-dealer').val($('#quarter-picker-by-dealer').val());
           }
@@ -566,30 +564,21 @@ byDealerVm = new Vue({
     prodctorChange: function() {
       var quarter, tmpQuarter, tmpYear, url, year, yearQuarter;
       yearQuarter = $('#quarter-picker-by-dealer').val();
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
       $('#month-picker-by-dealer').val('請選擇');
       this.dataList = [];
       this.taxList = [];
       this.isShowloading = true;
-      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val();
+      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(this.dealerData, $('#productor-picker').val());
       return this.$http.get(url).then(function(response) {
         this.isShowRadio = ShowTax(response.data.items, this.taxList);
         this.dataList = response.data.items;
         this.originList = response.data.items.concat([]);
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker-by-dealer').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         if (this.isShowRadio) {
           $('#quarter-picker-tax-by-dealer').val($('#quarter-picker-by-dealer').val());
           $("#productor-picker-tax").val($("#productor-picker").val());
@@ -613,7 +602,7 @@ byDealerVm = new Vue({
         }
       }
       if (year === 0 && month === 0) {
-        return;
+        this.dataList = this.originList;
       }
       if (year !== 0 && month === 0) {
         this.dataList = getWithYear(this.originList, year);
@@ -625,32 +614,23 @@ byDealerVm = new Vue({
     quarterChangeTax: function() {
       var quarter, tmpQuarter, tmpYear, year, yearQuarter;
       yearQuarter = $('#quarter-picker-tax-by-dealer').val();
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
       $('#month-picker-by-dealer').val('請選擇');
       this.dataList = [];
       this.taxList = [];
-      this.isShowloading = true;
       return this.loadDealer(year, quarter, function(year, quarter, _self) {
         var url;
-        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker-tax').val();
+        url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(_self.dealerData, $('#productor-picker-tax').val());
+        _self.isShowloading = true;
         return _self.$http.get(url).then(function(response) {
           ShowTax(response.data.items, this.taxList);
           this.dataList = response.data.items;
           this.originList = response.data.items.concat([]);
           this.total.count = response.data.total.totalCount;
           this.total.sum = response.data.total.totalUnimoney;
-          if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-            $('#quarter-picker-tax-by-dealer').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-          }
           $('#quarter-picker-by-dealer').val($('#quarter-picker-tax-by-dealer').val());
           return this.isShowloading = false;
         }, function(error) {
@@ -661,30 +641,21 @@ byDealerVm = new Vue({
     prodctorChangeTax: function() {
       var quarter, tmpQuarter, tmpYear, url, year, yearQuarter;
       yearQuarter = $('#quarter-picker-tax-by-dealer').val();
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
       $('#month-picker-by-dealer').val('請選擇');
       this.dataList = [];
       this.taxList = [];
       this.isShowloading = true;
-      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerName=' + $('#productor-picker').val();
+      url = baseUrl + '&year=' + year + '&quarter=' + quarter + '&byRole=redeemer&redeemerId=' + getDealerId(this.dealerData, $('#productor-picker').val());
       return this.$http.get(url).then(function(response) {
         ShowTax(response.data.items, this.taxList);
         this.dataList = response.data.items;
         this.originList = response.data.items.concat([]);
         this.total.count = response.data.total.totalCount;
         this.total.sum = response.data.total.totalUnimoney;
-        if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker-tax-by-dealer').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
-        }
         $('#quarter-picker-by-dealer').val($('#quarter-picker-tax-by-dealer').val());
         $("#productor-picker").val($("#productor-picker-tax").val());
         return this.isShowloading = false;
@@ -695,8 +666,13 @@ byDealerVm = new Vue({
     exportList: function() {
       var dateRange, emailUrl, month, title, tmpMonth, tmpQuarter, tmpYear, tquarter, tyear, year, yearMonth, yearQuarter, _self;
       _self = this;
+      yearQuarter = $('#quarter-picker-by-dealer').val();
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      tyear = tmpYear.substring(0, tmpYear.indexOf("年"));
+      tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
+      dateRange = tyear + '年' + '第' + tquarter + "季度";
       yearMonth = $('#month-picker-by-dealer').val();
-      dateRange = '所有';
       year = 0;
       month = 0;
       if (yearMonth !== "請選擇") {
@@ -706,21 +682,11 @@ byDealerVm = new Vue({
         dateRange = year + '年';
         if (tmpMonth !== "請選擇") {
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"));
+          month = month.length === 1 ? '0' + month : month;
           dateRange = year + '年' + month + '月';
         }
       }
       title = dateRange + '優利金對賬清單將傳送至以下電子信箱：' + '<br/>';
-      yearQuarter = $('#quarter-picker-by-dealer').val();
-      tyear = 0;
-      tquarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        tyear = tmpYear.substring(0, tmpYear.indexOf("年"));
-        if (tmpQuarter !== "全部") {
-          tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-        }
-      }
       if (agentVm.email !== '') {
         title += agentVm.email;
         $.confirm({
@@ -730,47 +696,52 @@ byDealerVm = new Vue({
             var url;
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill';
             if (month !== 0 && year !== 0) {
-              month = month.length === 1 ? '0' + month : month;
-              url = url + '&redeemMonth=' + year + '年' + month + '月';
+              url = url + '&redeemMonth=' + year + '-' + month;
+            }
+            if (month === 0 && year !== 0) {
+              url = url + '&redeemMonth=' + year + '-all';
             }
             _self.disableAccountButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             }, function(vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             });
           },
           onCancel: function() {}
         });
+        customShowConfirmAccount(agentVm);
         return;
       }
       this.disableAccountButton = true;
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId;
       return this.$http.get(emailUrl).then(function(response) {
-        this.disableAccountButton = false;
-        title += response.data.email;
-        return $.confirm({
+        title += response.data.sendEmail;
+        $.confirm({
           title: title,
           text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu',
           onOK: function() {
             var url;
-            agentVm.email = response.data.email;
+            agentVm.email = response.data.sendEmail;
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + agentVm.email + '&emailType=bill';
             if (month !== 0 && year !== 0) {
-              month = month.length === 1 ? '0' + month : month;
-              url = url + '&redeemMonth=' + year + '年' + month + '月';
+              url = url + '&redeemMonth=' + year + '-' + month;
+            }
+            if (month === 0 && year !== 0) {
+              url = url + '&redeemMonth=' + year + '-all';
             }
             _self.disableAccountButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             }, function(vm) {
-              return vm.disableAccountButton = false;
+              return vm.disableAccountButton = true;
             });
           },
           onCancel: function() {
-            return agentVm.email = response.data.email;
+            return agentVm.email = response.data.sendEmail;
           }
         });
+        return customShowConfirmAccount(this);
       }, function(error) {
         this.disableAccountButton = false;
         return console.log(error);
@@ -780,20 +751,12 @@ byDealerVm = new Vue({
       var dateRange, emailUrl, quarter, title, tmpQuarter, tmpYear, year, yearQuarter, _self;
       _self = this;
       yearQuarter = $('#quarter-picker-tax-by-dealer').val();
-      dateRange = '所有';
-      year = 0;
-      quarter = 0;
-      if (yearQuarter !== "全部") {
-        tmpYear = yearQuarter.split(' ')[0];
-        tmpQuarter = yearQuarter.split(' ')[1];
-        year = tmpYear.substring(0, tmpYear.indexOf("年"));
-        dateRange = year + '年';
-        if (tmpQuarter !== "全部") {
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
-          dateRange = year + '年' + quarter + '季度';
-        }
-      }
-      title = dateRange + '優利金補稅清單將傳送至以下電子信箱：' + '<br/>';
+      tmpYear = yearQuarter.split(' ')[0];
+      tmpQuarter = yearQuarter.split(' ')[1];
+      year = tmpYear.substring(0, tmpYear.indexOf("年"));
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"));
+      dateRange = year + '年' + '第' + quarter + '季度';
+      title = dateRange + '優利金搭贈清單將傳送至以下電子信箱：' + '<br/>';
       if (agentVm.email !== '') {
         title += agentVm.email;
         $.confirm({
@@ -804,39 +767,40 @@ byDealerVm = new Vue({
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice';
             _self.disableTaxButton = true;
             return _self.sendEmail(url, function(response, vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             }, function(vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             });
           },
           onCancel: function() {}
         });
+        customShowConfirmTax(agentVm);
         return;
       }
       this.disableTaxButton = true;
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId;
       return this.$http.get(emailUrl).then(function(response) {
-        this.disableTaxButton = false;
-        title += response.data.email;
-        return $.confirm({
+        title += response.data.sendEmail;
+        $.confirm({
           title: title,
           text: '如需更改電子信箱，請聯繫行銷部Daisy Chiu',
           onOK: function() {
             var url;
-            agentVm.email = response.data.email;
+            agentVm.email = response.data.sendEmail;
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + agentVm.email + '&emailType=invoice';
             _self.disableTaxButton = true;
             _self.sendEmail(url, function(response, vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             }, function(vm) {
-              return vm.disableTaxButton = false;
+              return vm.disableTaxButton = true;
             });
             ({
               onCancel: function() {}
             });
-            return agentVm.email = response.data.email;
+            return agentVm.email = response.data.sendEmail;
           }
         });
+        return customShowConfirmTax(this);
       }, function(error) {
         this.disableTaxButton = false;
         return console.log(error);
@@ -864,16 +828,16 @@ byDealerVm = new Vue({
   computed: {
     accountText: function() {
       if (this.disableAccountButton) {
-        return '處理中..';
+        return '導出對賬清單至電子郵箱';
       } else {
         return '導出對賬清單至電子郵箱';
       }
     },
     taxText: function() {
       if (this.disableTaxButton) {
-        return '處理中..';
+        return '導出搭贈清單至電子郵箱';
       } else {
-        return '導出補稅清單至電子郵箱';
+        return '導出搭贈清單至電子郵箱';
       }
     },
     isAccountList: function() {
@@ -922,7 +886,7 @@ agentVm = new Vue({
 
 bdVm.initData();
 
-$("#quarter-picker").quarterPicker({
+$("#quarter-picker").quarterPickerNoAll({
   title: "",
   changeEvent: bdVm.quarterChange
 });
@@ -932,12 +896,12 @@ $("#month-picker").monthPicker({
   changeEvent: bdVm.monthChange
 });
 
-$("#quarter-picker-tax").quarterPicker({
+$("#quarter-picker-tax").quarterPickerNoAll({
   title: "",
   changeEvent: bdVm.quarterChangeTax
 });
 
-$("#quarter-picker-by-dealer").quarterPicker({
+$("#quarter-picker-by-dealer").quarterPickerNoAll({
   title: "",
   changeEvent: byDealerVm.quarterChange
 });
@@ -947,7 +911,7 @@ $("#month-picker-by-dealer").monthPicker({
   changeEvent: byDealerVm.monthChange
 });
 
-$("#quarter-picker-tax-by-dealer").quarterPicker({
+$("#quarter-picker-tax-by-dealer").quarterPickerNoAll({
   title: "",
   changeEvent: byDealerVm.quarterChangeTax
 });

@@ -1,4 +1,4 @@
-var baseUrl, dmVM, userId, _ref;
+var baseUrl, dmVM, isAllowSearchButton, userId, _ref;
 
 $("title")[0].innerText = "盤商管理";
 
@@ -12,7 +12,10 @@ if ((_ref = util.queryMap) != null ? _ref.userId : void 0) {
 
 baseUrl = '/api/ufstrust/redeemer/web-assessment-list?userId=' + userId;
 
+isAllowSearchButton = false;
+
 Vue.http.interceptors.push(function(request, next) {
+  request.url = request.getUrl() + "&v=" + new Date().getTime();
   return next(function(response) {
     var result;
     if (response.body.code !== void 0) {
@@ -54,10 +57,18 @@ dmVM = new Vue({
       url = baseUrl + '&year=' + year + '&quarter=' + quarter;
       return this.$http.get(url).then(function(response) {
         this.dataList = response.data.items;
-        if (response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
+        this.isShowloading = false;
+        if (response.data.items.length === 0 && response.data.type === 'target') {
+          return $.modal({
+            title: "",
+            text: "當前季度目標尚未全部核可",
+            buttons: [
+              {
+                text: "確認"
+              }
+            ]
+          });
         }
-        return this.isShowloading = false;
       }, function(error) {
         return console.log(error);
       });
@@ -79,17 +90,42 @@ dmVM = new Vue({
       if (this.distributorName !== '') {
         url = url + '&searchKey=' + this.distributorName;
       }
+      this.isShowloading = true;
       return this.$http.get(url).then(function(response) {
+        this.isShowloading = false;
         this.dataList = response.data.items;
-        if (quarter !== 0 && response.data.items.length > 0 && response.data.items[0].quarter !== quarter) {
-          return $('#quarter-picker').val(response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度');
+        if (response.data.items.length === 0 && response.data.type === 'target') {
+          return $.modal({
+            title: "",
+            text: "當前季度目標尚未全部核可",
+            buttons: [
+              {
+                text: "確認"
+              }
+            ]
+          });
         }
       }, function(error) {
         return console.log(error);
       });
     },
     search: function() {
+      isAllowSearchButton = true;
       return this.quarterChange();
+    },
+    blurSearch: function() {
+      if (isAllowSearchButton === true) {
+        return;
+      }
+      return this.quarterChange();
+    },
+    clear: function(e) {
+      var $input;
+      $input = $(e.target).parents(".weui-search-bar").find(".weui-search-bar__input");
+      if ($input.val()) {
+        $input.val("").focus();
+      }
+      return this.distributorName = '';
     }
   },
   computed: {
@@ -108,7 +144,7 @@ dmVM = new Vue({
         count: count,
         target: target,
         actual: actual,
-        getRate: (totalRate * 100 / count).toFixed(2) + '%'
+        getRate: (totalRate * 100 / count).toFixed(1) + '%'
       };
       return result;
     }

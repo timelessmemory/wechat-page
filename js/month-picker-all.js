@@ -5,13 +5,13 @@
   "use strict";
 
   var rawCitiesData = [];
-  var months = ["請選擇", "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+  var months = ["全部", "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
   rawCitiesData.push({
-    "name" : "請選擇",
+    "name" : "全部",
     "code" : "0001",
     "sub" : [{
-      "name" : "請選擇",
+      "name" : "全部",
       "code" : "00010"
     }]
   });
@@ -75,7 +75,7 @@
   };
 
   var parseInitValue = function (val) {
-    if (val == '請選擇') val = "請選擇 請選擇"
+    if (val == '全部') val = "全部 全部"
     var p = raw[0], c, d;
     var tokens = val.split(' ');
     raw.map(function (t) {
@@ -117,7 +117,7 @@
     return [p.code, c.code];
   }
 
-  $.fn.monthPicker = function(params) {
+  $.fn.monthPickerAll = function(params) {
     params = $.extend({}, defaults, params);
 
     return this.each(function() {
@@ -230,7 +230,7 @@
       var val = $(this).val();
 
       //当input值为空时选择器默认选中的内容
-      if (!val) val = '請選擇 請選擇';
+      if (!val) val = '全部 全部';
       currentProvince = val.split(" ")[0];
       currentCity = val.split(" ")[1];
       currentDistrict= val.split(" ")[2];
@@ -273,7 +273,7 @@
     });
   };
 
-  defaults = $.fn.monthPicker.prototype.defaults = {
+  defaults = $.fn.monthPickerAll.prototype.defaults = {
     showDistrict: false
   };
 

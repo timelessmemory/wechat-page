@@ -1,0 +1,185 @@
+.competition-display {
+
+  a.weui-navbar__item.weui-bar__item--on {
+    border-bottom: solid 0.2rem $ufs-orange-theme-color;
+    color: $ufs-orange-theme-color;
+  }
+
+  .weui-navbar__item {
+    padding: 0.6rem 0;
+  }
+
+  .weui-search-bar {
+    padding: 0px;
+    margin: 0 1.6rem;
+    height: 3.5rem;
+  }
+
+  .weui-search-bar__label {
+    line-height: 3.2rem;
+  }
+
+  .weui-search-bar__box {
+    line-height: 4rem;
+  }
+
+  .weui-search-bar__box .weui-icon-search {
+    line-height: 3.7rem;
+  }
+
+  .weui-search-bar__box .weui-icon-clear{
+    line-height: 3.7rem;
+  }
+
+  .weui-navbar + .weui-tab__bd {
+    padding-top: 3.8rem;
+    background-color: #FAFAFA;
+  }
+
+  .weui-search-bar__label .weui-search-bar__form:after {
+    border-radius: 0.5rem;
+  }
+
+  .weui-search-bar__box .weui-search-bar__input {
+    padding: 0.6rem 0;
+  }
+
+  .row-cell {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    font-size: 1.6rem;
+  }
+
+  .col-cell {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+  }
+
+  .weui-cell__bd {
+    font-size: 1.6rem;
+    margin-left: 0.5em;
+  }
+
+  .weui-dialog__hd {
+    text-align: center;
+  }
+
+  .weui-dialog {
+    font-size: 1.8rem;
+  }
+
+  .weui-dialog__bd {
+    font-size: 1.6rem;
+  }
+
+  .weui-dialog__ft {
+    font-size: 1.8rem;
+  }
+
+  .total-desc {
+    font-size: 1.6rem;
+    margin-left:1em;
+    color:grey;
+
+    span {
+      color: black;
+      font-weight: bold;
+      font-style: italic;
+    }
+  }
+
+  .weui-cell:before {
+    left: 0px;
+  }
+
+  .top-distance {
+    margin-top: 1rem;
+  }
+
+  .weui-pull-to-refresh__layer {
+    padding:0.4rem;
+  }
+
+  .weui-pull-to-refresh {
+    margin-top: -4.2rem;
+  }
+
+  .weui-pull-to-refresh__layer {
+    background-color: #fafafa
+  }
+
+  .weui-navbar {
+    background-color: #fff;
+  }
+
+  .weui-tab__bd-item.weui-pull-to-refresh {
+    position: relative;
+    top: 1.2rem;
+  }
+
+  .weui-tab__bd .weui-tab__bd-item {
+    height: 105%;
+  }
+
+  .weui-cell__ft .weui-btn {
+    font-size: 1.4rem;
+    height: 2.4rem;
+    line-height: 2.4rem;
+    padding-left:1.2rem;
+    padding-right:1.2rem;
+  }
+
+  .weui-btn_default {
+    background-color: $ufs-orange-theme-color;
+    color: white;
+  }
+
+  .weui-btn_disabled.weui-btn_default {
+    color: white;
+    background-color: #bdbdbd;
+  }
+
+  .weui-dialog__title {
+    font-size: 1.8rem;
+  }
+
+  .weui-btn_disabled.weui-btn_default:after {
+    border: 1px solid white;
+  }
+
+  .checkbox-group {
+    margin-top: 0.8rem;
+
+    .as-checkbox {
+      opacity: 0;
+    }
+
+    .as-checkbox + a {
+      display: inline-block;
+      width: 1.6rem;
+      height: 1.6rem;
+      border: 1px solid grey;
+      position: absolute;
+      top: 0.3rem;
+      left: 0px;
+    }
+
+    .as-checkbox:checked + a {
+      background: url(/webapp/build/ufstrust/images/consent_clause_icon.png);
+      background-size: 1.6rem;
+      border: 0px solid grey;
+    }
+
+    .checkbox {
+      position: relative;
+
+      .word {
+        display: inline-block;
+        margin-top: 0.5rem;
+        margin-left: 0.5rem;
+      }
+    }
+  }
+}

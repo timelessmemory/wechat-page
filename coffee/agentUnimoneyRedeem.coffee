@@ -11,10 +11,20 @@ switchTap = (currentTarget)->
   if not /^#/.test(href)
     return
   $.showTab($a)
+  $($a.context.hash).find('#searchBar').removeClass("weui-search-bar_focusing")
 
 Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
 )
+
+getDealerId = (dealerData, name)->
+  id = ''
+  dealerData.map((item)->
+    for key of item
+      if item[key].name is name
+        id = key
+  )
+  return id
 
 userId = util.queryMap.userId if util.queryMap?.userId
 baseUrl = '/api/ufstrust/unimoney/web-unimoney-list?userId=' + userId
@@ -22,9 +32,11 @@ baseDealerUrl = '/api/ufstrust/agent/redeemer-list?userId=' + userId
 perPage = 10
 page = 1
 loading = false
+isAllowSearchButton = false
+# pbByWhat = "distributor"
 
 Vue.http.interceptors.push((request, next)->
-
+  request.url = request.getUrl() + "&v=" + new Date().getTime()
   next((response)->
 
     if response.body.code isnt undefined
@@ -75,7 +87,8 @@ tbcVM = new Vue(
       count : 0
       sum : 0
     dealers : []
-    isShowPicker : true
+    isShowPicker : false
+    dealerData : []
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -97,23 +110,30 @@ tbcVM = new Vue(
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
       if not this.isCheckPs
-        dealer = $('#productor-picker-to-checked').val()
-        url = url + '&redeemerName=' + dealer
+        dealer = getDealerId(this.dealerData, $('#productor-picker-to-checked').val())
+        url = url + '&redeemerId=' + dealer
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.toBeCheckedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     search : ()->
+      isAllowSearchButton = true
+      this.getData()
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
       this.getData()
     loadDealer : ()->
-      this.isShowPicker = true
       yearQuarter = $('#quarter-picker').val()
       year = 0
       quarter = 0
@@ -129,40 +149,51 @@ tbcVM = new Vue(
         (response)->
           _self = this
           this.dealers = []
-          values = []
-          for key of response.data
-            values = response.data[key]
+          this.dealerData = response.data
+          response.data.map((item)->
+            for key of item
+              _self.dealers.push item[key].name
+          )
 
-          if values.length > 0
-            values.map((item)->
-              _self.dealers.push(item.name)
-            )
+          if this.dealers.length > 0
             $('#productor-picker-to-checked').val(this.dealers[0])
             $("#productor-picker-to-checked").productorPicker(
               title : ""
               changeEvent : this.getData
               options:this.dealers
             )
+            this.isShowPicker = true
             this.getData()
           else
             this.isShowPicker = false
+            this.toBeCheckedData = []
+            this.total.count = 0
+            this.total.sum = 0
         (error)->
           console.log(error)
       )
-    loadData : (taget)->
-      # year = new Date().getFullYear()
-      # month = new Date().getMonth() + 1
-      # quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
-      # $('#quarter-picker').val(year + '年' + ' ' + '第' + quarter + '季度')
+    loadData : ()->
+      # $('#quarter-picker').val '全部'
+      # this.distributorName = ""
+      # this.isLoadMore = false
+      # if this.byWhat is pbByWhat
+      #   if pbByWhat is 'distributor'
+      #     this.getData()
+      #   else
+      #     this.loadDealer()
+      # else
+      #   this.byWhat = pbByWhat
 
       year = 0
       quarter = 0
       $('#quarter-picker').val('全部')
 
       this.distributorName = ""
+      # this.byWhat = pbByWhat
       this.byWhat = "distributor"
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage + '&byRole=' + this.byWhat
       this.$http.get(url).then(
@@ -174,11 +205,7 @@ tbcVM = new Vue(
           #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
   computed :
@@ -187,6 +214,7 @@ tbcVM = new Vue(
       return isCheckPs
   watch :
     byWhat : (newValue)->
+      # pbByWhat = newValue
       if newValue is 'distributor'
         this.getData()
       else
@@ -206,7 +234,8 @@ hbcVM = new Vue(
       count : 0
       sum : 0
     dealers : []
-    isShowPicker : true
+    isShowPicker : false
+    dealerData : []
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -224,21 +253,23 @@ hbcVM = new Vue(
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
       if not this.isCheckPs
-        dealer = $('#productor-picker-have-checked').val()
-        url = url + '&redeemerName=' + dealer
+        dealer = getDealerId(this.dealerData, $('#productor-picker-have-checked').val())
+        url = url + '&redeemerId=' + dealer
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.haveBeenCheckedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     loadDealer : ()->
-      this.isShowPicker = true
       yearQuarter = $('#quarter-picker-no-all').val()
       year = 0
       quarter = 0
@@ -254,30 +285,40 @@ hbcVM = new Vue(
         (response)->
           _self = this
           this.dealers = []
-          values = []
-          for key of response.data
-            values = response.data[key]
-          if values.length > 0
-            values.map((item)->
-              _self.dealers.push(item.name)
-            )
+          this.dealerData = response.data
+          response.data.map((item)->
+            for key of item
+              _self.dealers.push item[key].name
+          )
+
+          if this.dealers.length > 0
             $('#productor-picker-have-checked').val(this.dealers[0])
             $("#productor-picker-have-checked").productorPicker(
               title : ""
               changeEvent : this.getData
               options:this.dealers
             )
+            this.isShowPicker = true
             this.getData()
           else
             this.isShowPicker = false
+            this.haveBeenCheckedData = []
+            this.total.count = 0
+            this.total.sum = 0
         (error)->
           console.log(error)
       )
     search : ()->
+      isAllowSearchButton = true
       this.getData()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.getData()
+    loadData: ()->
       this.distributorName = ""
       this.byWhat = "distributor"
+      # this.byWhat = pbByWhat
 
       year = new Date().getFullYear()
       month = new Date().getMonth() + 1
@@ -286,6 +327,7 @@ hbcVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage + '&byRole=' + this.byWhat
       this.$http.get(url).then(
@@ -293,15 +335,11 @@ hbcVM = new Vue(
           this.haveBeenCheckedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
     isMark: (param)->
@@ -317,6 +355,7 @@ hbcVM = new Vue(
       return isCheckPs
   watch :
     byWhat : (newValue)->
+      # pbByWhat = newValue
       if newValue is 'distributor'
         this.getData()
       else
@@ -336,7 +375,8 @@ necgVM = new Vue(
       count : 0
       sum : 0
     dealers : []
-    isShowPicker : true
+    isShowPicker : false
+    dealerData : []
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -358,21 +398,23 @@ necgVM = new Vue(
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
       if not this.isCheckPs
-        dealer = $('#productor-picker-not-exchanged').val()
-        url = url + '&redeemerName=' + dealer
+        dealer = getDealerId(this.dealerData, $('#productor-picker-not-exchanged').val())
+        url = url + '&redeemerId=' + dealer
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.notExchangedData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     loadDealer : ()->
-      this.isShowPicker = true
       yearQuarter = $('#quarter-picker-not-exchanged').val()
       year = 0
       quarter = 0
@@ -388,35 +430,40 @@ necgVM = new Vue(
         (response)->
           _self = this
           this.dealers = []
-          values = []
-          for key of response.data
-            values = response.data[key]
-          if values.length > 0
-            values.map((item)->
-              _self.dealers.push(item.name)
-            )
+          this.dealerData = response.data
+          response.data.map((item)->
+            for key of item
+              _self.dealers.push item[key].name
+          )
+
+          if this.dealers.length > 0
             $('#productor-picker-not-exchanged').val(this.dealers[0])
             $("#productor-picker-not-exchanged").productorPicker(
               title : ""
               changeEvent : this.getData
               options:this.dealers
             )
+            this.isShowPicker = true
             this.getData()
           else
             this.isShowPicker = false
+            this.notExchangedData = []
+            this.total.count = 0
+            this.total.sum = 0
         (error)->
           console.log(error)
       )
     search : ()->
+      isAllowSearchButton = true
       this.getData()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.getData()
+    loadData: ()->
       this.distributorName = ""
       this.byWhat = "distributor"
-
-      # year = new Date().getFullYear()
-      # month = new Date().getMonth() + 1
-      # quarter = if month % 3 is 0 then month / 3 else Math.floor(month / 3) + 1
-      # $('#quarter-picker-not-exchanged').val(year + '年' + ' ' + '第' + quarter + '季度')
+      # this.byWhat = pbByWhat
 
       year = 0
       quarter = 0
@@ -424,6 +471,7 @@ necgVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage + '&byRole=' + this.byWhat
       this.$http.get(url).then(
@@ -435,11 +483,7 @@ necgVM = new Vue(
           #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
   computed:
@@ -448,6 +492,7 @@ necgVM = new Vue(
       return isCheckPs
   watch :
     byWhat : (newValue)->
+      # pbByWhat = newValue
       if newValue is 'distributor'
         this.getData()
       else
@@ -467,7 +512,8 @@ expVM = new Vue(
       count : 0
       sum : 0
     dealers : []
-    isShowPicker : true
+    isShowPicker : false
+    dealerData : []
   methods :
     quarterChange : ()->
       if not this.isCheckPs
@@ -485,21 +531,23 @@ expVM = new Vue(
       if this.distributorName isnt ''
         url = url + '&searchKey=' + this.distributorName
       if not this.isCheckPs
-        dealer = $('#productor-picker-expired').val()
-        url = url + '&redeemerName=' + dealer
+        dealer = getDealerId(this.dealerData, $('#productor-picker-expired').val())
+        url = url + '&redeemerId=' + dealer
+      this.isLoadMore = false
+      this.isShowloading = true
       this.$http.get(url).then(
         (response)->
+          this.isShowloading = false
           this.expiredData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
         (error)->
           console.log error
       )
     loadDealer : ()->
-      this.isShowPicker = true
       yearQuarter = $('#quarter-picker-expired').val()
       year = 0
       quarter = 0
@@ -515,30 +563,40 @@ expVM = new Vue(
         (response)->
           _self = this
           this.dealers = []
-          values = []
-          for key of response.data
-            values = response.data[key]
-          if values.length > 0
-            values.map((item)->
-              _self.dealers.push(item.name)
-            )
+          this.dealerData = response.data
+          response.data.map((item)->
+            for key of item
+              _self.dealers.push item[key].name
+          )
+
+          if this.dealers.length > 0
             $('#productor-picker-expired').val(this.dealers[0])
             $("#productor-picker-expired").productorPicker(
               title : ""
               changeEvent : this.getData
               options:this.dealers
             )
+            this.isShowPicker = true
             this.getData()
           else
             this.isShowPicker = false
+            this.expiredData = []
+            this.total.count = 0
+            this.total.sum = 0
         (error)->
           console.log(error)
       )
     search : ()->
+      isAllowSearchButton = true
       this.getData()
-    loadData: (taget)->
+    blurSearch : ()->
+      if isAllowSearchButton is true
+        return
+      this.getData()
+    loadData: ()->
       this.distributorName = ""
       this.byWhat = "distributor"
+      # this.byWhat = pbByWhat
 
       year = new Date().getFullYear()
       month = new Date().getMonth() + 1
@@ -547,6 +605,7 @@ expVM = new Vue(
 
       page = 1
 
+      this.isLoadMore = false
       this.isShowloading = true
       url = baseUrl + '&type=' + this.type + '&year=' + year + '&quarter=' + quarter + '&page=' + page + '&per-page=' + perPage + '&byRole=' + this.byWhat
       this.$http.get(url).then(
@@ -554,15 +613,11 @@ expVM = new Vue(
           this.expiredData = response.data.items
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           this.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
           this.isShowloading = false
-          if taget
-            switchTap(taget)
         (error)->
-          if taget
-            switchTap(taget)
           console.log error
       )
   computed:
@@ -571,6 +626,7 @@ expVM = new Vue(
       return isCheckPs
   watch :
     byWhat : (newValue)->
+      # pbByWhat = newValue
       if newValue is 'distributor'
         this.getData()
       else
@@ -582,13 +638,17 @@ csVM = new Vue(
   el: "#checkSystem"
   methods:
     loadToBeChecked: (e)->
-      tbcVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      tbcVM.loadData()
     loadHaveBeenChecked: (e)->
-      hbcVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      hbcVM.loadData()
     loadNotExchanged: (e)->
-      necgVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      necgVM.loadData()
     loadExpired: (e)->
-      expVM.loadData(e.currentTarget)
+      switchTap(e.currentTarget)
+      expVM.loadData()
 )
 
 tbcVM.loadData()
@@ -611,15 +671,18 @@ $("#toBeChecked").pullToRefresh().on("pull-to-refresh", ()->
   if tbcVM.distributorName isnt ''
     url = url + '&searchKey=' + tbcVM.distributorName
   if not tbcVM.isCheckPs
-    dealer = $('#productor-picker-to-checked').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(tbcVM.dealerData, $('#productor-picker-to-checked').val())
+    url = url + '&redeemerId=' + dealer
+  tbcVM.isLoadMore = false
+  tbcVM.isShowloading = true
   tbcVM.$http.get(url).then(
     (response)->
+      tbcVM.isShowloading = false
       tbcVM.toBeCheckedData = response.data.items
       tbcVM.total.count = response.data.total.totalCount
       tbcVM.total.sum = response.data.total.totalUnimoney
-      if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       tbcVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -641,15 +704,18 @@ $("#haveBeenChecked").pullToRefresh().on("pull-to-refresh", ()->
   if hbcVM.distributorName isnt ''
     url = url + '&searchKey=' + hbcVM.distributorName
   if not hbcVM.isCheckPs
-    dealer = $('#productor-picker-have-checked').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(hbcVM.dealerData, $('#productor-picker-have-checked').val())
+    url = url + '&redeemerId=' + dealer
+  hbcVM.isLoadMore = false
+  hbcVM.isShowloading = true
   hbcVM.$http.get(url).then(
     (response)->
+      hbcVM.isShowloading = false
       hbcVM.haveBeenCheckedData = response.data.items
       hbcVM.total.count = response.data.total.totalCount
       hbcVM.total.sum = response.data.total.totalUnimoney
-      if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker-no-all').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       hbcVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -675,15 +741,18 @@ $("#notExchanged").pullToRefresh().on("pull-to-refresh", ()->
   if necgVM.distributorName isnt ''
     url = url + '&searchKey=' + necgVM.distributorName
   if not necgVM.isCheckPs
-    dealer = $('#productor-picker-not-exchanged').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(necgVM.dealerData, $('#productor-picker-not-exchanged').val())
+    url = url + '&redeemerId=' + dealer
+  necgVM.isLoadMore = false
+  necgVM.isShowloading = true
   necgVM.$http.get(url).then(
     (response)->
+      necgVM.isShowloading = false
       necgVM.notExchangedData = response.data.items
       necgVM.total.count = response.data.total.totalCount
       necgVM.total.sum = response.data.total.totalUnimoney
-      if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker-not-exchanged').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       necgVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -705,15 +774,18 @@ $("#expired").pullToRefresh().on("pull-to-refresh", ()->
   if expVM.distributorName isnt ''
     url = url + '&searchKey=' + expVM.distributorName
   if not expVM.isCheckPs
-    dealer = $('#productor-picker-expired').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(expVM.dealerData, $('#productor-picker-expired').val())
+    url = url + '&redeemerId=' + dealer
+  expVM.isLoadMore = false
+  expVM.isShowloading = true
   expVM.$http.get(url).then(
     (response)->
+      expVM.isShowloading = false
       expVM.expiredData = response.data.items
       expVM.total.count = response.data.total.totalCount
       expVM.total.sum = response.data.total.totalUnimoney
-      if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-        $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+      # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+      #   $('#quarter-picker-expired').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
       expVM.isLoadMore = if response.data._meta.currentPage < response.data._meta.pageCount then true else false
       _self.pullToRefreshDone()
     (error)->
@@ -747,8 +819,8 @@ $("#toBeChecked").infinite(20).on("infinite", ()->
   if tbcVM.distributorName isnt ''
     url = url + '&searchKey=' + tbcVM.distributorName
   if not tbcVM.isCheckPs
-    dealer = $('#productor-picker-to-checked').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(tbcVM.dealerData, $('#productor-picker-to-checked').val())
+    url = url + '&redeemerId=' + dealer
   tbcVM.$http.get(url).then(
     (response)->
       tbcVM.toBeCheckedData.push.apply(tbcVM.toBeCheckedData, response.data.items)
@@ -781,8 +853,8 @@ $("#haveBeenChecked").infinite(20).on("infinite", ()->
   if hbcVM.distributorName isnt ''
     url = url + '&searchKey=' + hbcVM.distributorName
   if not hbcVM.isCheckPs
-    dealer = $('#productor-picker-have-checked').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(hbcVM.dealerData, $('#productor-picker-have-checked').val())
+    url = url + '&redeemerId=' + dealer
   hbcVM.$http.get(url).then(
     (response)->
       hbcVM.haveBeenCheckedData.push.apply(hbcVM.haveBeenCheckedData, response.data.items)
@@ -819,8 +891,8 @@ $("#notExchanged").infinite(20).on("infinite", ()->
   if necgVM.distributorName isnt ''
     url = url + '&searchKey=' + necgVM.distributorName
   if not necgVM.isCheckPs
-    dealer = $('#productor-picker-not-exchanged').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(necgVM.dealerData, $('#productor-picker-not-exchanged').val())
+    url = url + '&redeemerId=' + dealer
   necgVM.$http.get(url).then(
     (response)->
       necgVM.notExchangedData.push.apply(necgVM.notExchangedData, response.data.items)
@@ -853,8 +925,8 @@ $("#expired").infinite(20).on("infinite", ()->
   if expVM.distributorName isnt ''
     url = url + '&searchKey=' + expVM.distributorName
   if not expVM.isCheckPs
-    dealer = $('#productor-picker-expired').val()
-    url = url + '&redeemerName=' + dealer
+    dealer = getDealerId(expVM.dealerData, $('#productor-picker-expired').val())
+    url = url + '&redeemerId=' + dealer
   expVM.$http.get(url).then(
     (response)->
       expVM.expiredData.push.apply(expVM.expiredData, response.data.items)

@@ -37,6 +37,20 @@ getWithYearAndMonth = (items, year, month)->
   )
   return result
 
+customShowConfirmAccount = (context)->
+  $('.weui-dialog.weui-confirm.weui-dialog--visible').hide()
+  window.setTimeout(()->
+    $('.weui-dialog.weui-confirm.weui-dialog--visible').fadeIn(100)
+    context.disableAccountButton = false
+  , 500)
+
+customShowConfirmTax = (context)->
+  $('.weui-dialog.weui-confirm.weui-dialog--visible').hide()
+  window.setTimeout(()->
+    $('.weui-dialog.weui-confirm.weui-dialog--visible').fadeIn(100)
+    context.disableTaxButton = false
+  , 500)
+
 Vue.filter('to-currency', (value) ->
   return accounting.formatNumber value
 )
@@ -46,7 +60,7 @@ baseUrl = '/api/ufstrust/unimoney/web-unimoney-bill-list?userId=' + userId
 sendEmailUrl = '/api/ufstrust/unimoney/export-unimoney-report?userId=' + userId
 
 Vue.http.interceptors.push((request, next)->
-
+  request.url = request.getUrl() + "&v=" + new Date().getTime()
   next((response)->
 
     if response.body.code isnt undefined
@@ -110,8 +124,8 @@ vsVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           if this.isShowTax
             $('#quarter-picker-tax').val($('#quarter-picker').val())
           this.isShowloading = false
@@ -120,14 +134,11 @@ vsVm = new Vue(
       )
     quarterChange : ()->
       yearQuarter = $('#quarter-picker').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker').val('請選擇')
       this.dataList = []
@@ -142,8 +153,8 @@ vsVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           if this.isShowTax
             $('#quarter-picker-tax').val($('#quarter-picker').val())
           this.isShowloading = false
@@ -161,21 +172,17 @@ vsVm = new Vue(
         if tmpMonth isnt "請選擇"
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"))
       if year is 0 and month is 0
-        return
+        this.dataList = this.originList
       if year isnt 0 and month is 0
         this.dataList = getWithYear(this.originList, year)
       if year isnt 0 and month isnt 0
         this.dataList = getWithYearAndMonth(this.originList, year, month)
     quarterChangeTax : ()->
       yearQuarter = $('#quarter-picker-tax').val()
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       $('#month-picker').val('請選擇')
       this.dataList = []
@@ -190,8 +197,8 @@ vsVm = new Vue(
           this.originList = response.data.items.concat([])
           this.total.count = response.data.total.totalCount
           this.total.sum = response.data.total.totalUnimoney
-          if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
-            $('#quarter-picker-tax').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
+          # if quarter isnt 0 and response.data.items.length > 0 and response.data.items[0].quarter isnt quarter
+          #   $('#quarter-picker-tax').val response.data.items[0].year + '年' + ' ' + '第' + response.data.items[0].quarter + '季度'
           $('#quarter-picker').val($('#quarter-picker-tax').val())
           this.isShowloading = false
         (error)->
@@ -199,9 +206,15 @@ vsVm = new Vue(
       )
     exportList : ()->
       _self = this
-      yearMonth = $('#month-picker').val()
-      dateRange = '所有'
+      yearQuarter = $('#quarter-picker').val()
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      tyear = tmpYear.substring(0, tmpYear.indexOf "年" )
+      tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
+      dateRange = tyear + '年' + '第' + tquarter + "季度"
+
+      yearMonth = $('#month-picker').val()
       year = 0
       month = 0
       if yearMonth isnt "請選擇"
@@ -211,19 +224,10 @@ vsVm = new Vue(
         dateRange = year + '年'
         if tmpMonth isnt "請選擇"
           month = tmpMonth.substring(0, tmpMonth.indexOf("月"))
+          month = if month.length is 1 then '0' + month else month
           dateRange = year + '年' + month + '月'
 
       title = dateRange + '優利金對賬清單將傳送至以下電子信箱：' + '<br/>'
-
-      yearQuarter = $('#quarter-picker').val()
-      tyear = 0
-      tquarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        tyear = tmpYear.substring(0, tmpYear.indexOf "年" )
-        if tmpQuarter isnt "全部"
-          tquarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
 
       if this.email isnt ''
         title += this.email
@@ -232,19 +236,20 @@ vsVm = new Vue(
           text: '如需更改電子信箱，請聯繫您的專屬業務'
           onOK: () ->
             url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + _self.email + '&emailType=bill'
-
             if month isnt 0 and year isnt 0
-              month = if month.length is 1 then '0' + month else month
-              url = url + '&redeemMonth=' + year + '年' + month + '月'
+              url = url + '&redeemMonth=' + year + '-' + month
+            if month is 0 and year isnt 0
+              url = url + '&redeemMonth=' + year + '-all'
 
             _self.disableAccountButton = true
             _self.sendEmail(url, (response, vm)->
-              vm.disableAccountButton = false
+              vm.disableAccountButton = true
             , (vm)->
-              vm.disableAccountButton = false
+              vm.disableAccountButton = true
             )
           onCancel: ()->
         )
+        customShowConfirmAccount(this)
         return
 
       this.disableAccountButton = true
@@ -252,29 +257,31 @@ vsVm = new Vue(
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId
       this.$http.get(emailUrl).then(
         (response)->
-          this.disableAccountButton = false
-          title += response.data.email
+          # this.disableAccountButton = false
+          title += response.data.sendEmail
 
           $.confirm(
             title: title
             text: '如需更改電子信箱，請聯繫您的專屬業務'
             onOK: () ->
-              _self.email = response.data.email
+              _self.email = response.data.sendEmail
               url = sendEmailUrl + '&year=' + tyear + '&quarter=' + tquarter + '&to=' + _self.email + '&emailType=bill'
 
               if month isnt 0 and year isnt 0
-                month = if month.length is 1 then '0' + month else month
-                url = url + '&redeemMonth=' + year + '年' + month + '月'
+                url = url + '&redeemMonth=' + year + '-' + month
+              if month is 0 and year isnt 0
+                url = url + '&redeemMonth=' + year + '-all'
 
               _self.disableAccountButton = true
               _self.sendEmail(url, (response, vm)->
-                vm.disableAccountButton = false
+                vm.disableAccountButton = true
               , (vm)->
-                vm.disableAccountButton = false
+                vm.disableAccountButton = true
               )
             onCancel: ()->
-              _self.email = response.data.email
+              _self.email = response.data.sendEmail
           )
+          customShowConfirmAccount(this)
         (error)->
           this.disableAccountButton = false
           console.log error
@@ -282,20 +289,14 @@ vsVm = new Vue(
     exportTaxList : ()->
       _self = this
       yearQuarter = $('#quarter-picker-tax').val()
-      dateRange = '所有'
 
-      year = 0
-      quarter = 0
-      if yearQuarter isnt "全部"
-        tmpYear = yearQuarter.split(' ')[0]
-        tmpQuarter = yearQuarter.split(' ')[1]
-        year = tmpYear.substring(0, tmpYear.indexOf "年" )
-        dateRange = year + '年'
-        if tmpQuarter isnt "全部"
-          quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
-          dateRange = year + '年' + quarter + '季度'
+      tmpYear = yearQuarter.split(' ')[0]
+      tmpQuarter = yearQuarter.split(' ')[1]
+      year = tmpYear.substring(0, tmpYear.indexOf "年" )
+      quarter = tmpQuarter.substring(tmpQuarter.indexOf("第") + 1, tmpQuarter.indexOf("季度"))
+      dateRange = year + '年' + '第' + quarter + '季度'
 
-      title = dateRange + '優利金補稅清單將傳送至以下電子信箱：' + '<br/>'
+      title = dateRange + '優利金搭贈清單將傳送至以下電子信箱：' + '<br/>'
 
       if this.email isnt ''
         title += this.email
@@ -306,12 +307,13 @@ vsVm = new Vue(
             url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + _self.email + '&emailType=invoice'
             _self.disableTaxButton = true
             _self.sendEmail(url, (response, vm)->
-              vm.disableTaxButton = false
+              vm.disableTaxButton = true
             , (vm)->
-              vm.disableTaxButton = false
+              vm.disableTaxButton = true
             )
           onCancel: ()->
         )
+        customShowConfirmTax(this)
         return
 
       this.disableTaxButton = true
@@ -319,24 +321,25 @@ vsVm = new Vue(
       emailUrl = '/api/ufstrust/trust-user/get-trust-user-info?userId=' + userId
       this.$http.get(emailUrl).then(
         (response)->
-          this.disableTaxButton = false
-          title += response.data.email
+          # this.disableTaxButton = false
+          title += response.data.sendEmail
 
           $.confirm(
             title: title
             text: '如需更改電子信箱，請聯繫您的專屬業務'
             onOK: () ->
-              _self.email = response.data.email
+              _self.email = response.data.sendEmail
               url = sendEmailUrl + '&year=' + year + '&quarter=' + quarter + '&to=' + _self.email + '&emailType=invoice'
               _self.disableTaxButton = true
               _self.sendEmail(url, (response, vm)->
-                vm.disableTaxButton = false
+                vm.disableTaxButton = true
               , (vm)->
-                vm.disableTaxButton = false
+                vm.disableTaxButton = true
               )
             onCancel: ()->
-              _self.email = response.data.email
+              _self.email = response.data.sendEmail
           )
+          customShowConfirmTax(this)
         (error)->
           this.disableTaxButton = false
           console.log error
@@ -359,19 +362,21 @@ vsVm = new Vue(
   computed :
     accountText : ()->
       if this.disableAccountButton
-        return '處理中..'
+        # return '處理中..'
+        return '導出對賬清單至電子郵箱'
       else
         return '導出對賬清單至電子郵箱'
     taxText : ()->
       if this.disableTaxButton
-        return '處理中..'
+        # return '處理中..'
+        return '導出搭贈清單至電子郵箱'
       else
-        return '導出補稅清單至電子郵箱'
+        return '導出搭贈清單至電子郵箱'
 )
 
 vsVm.initData()
 
-$("#quarter-picker").quarterPicker(
+$("#quarter-picker").quarterPickerNoAll(
   title: ""
   changeEvent : vsVm.quarterChange
 )
@@ -381,7 +386,7 @@ $("#month-picker").monthPicker(
   changeEvent : vsVm.monthChange
 )
 
-$("#quarter-picker-tax").quarterPicker(
+$("#quarter-picker-tax").quarterPickerNoAll(
   title: ""
   changeEvent : vsVm.quarterChangeTax
 )
